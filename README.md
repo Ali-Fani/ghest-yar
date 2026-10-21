@@ -41,7 +41,7 @@ npm run tauri build    # ساخت نصب‌کننده NSIS
 1. ابتدا `CHANGELOG.md` را به‌روز کنید و تغییرات را کامیت کنید (درخت git باید تمیز باشد).
 2. نسخه را افزایش دهید: `npm run release:patch` (یا `release:minor` / `release:major`). این دستور همهٔ فایل‌ها را به‌روز می‌کند، کامیت می‌سازد و برچسب `vX.Y.Z` را می‌زند.
 3. نصب‌کننده را بسازید: `npm run tauri build`
-4. فایل نصب‌کننده: `src-tauri/target/release/bundle/nsis/قسط‌یار_<version>_x64-setup.exe`
+4. فایل نصب‌کننده: `src-tauri/target/release/bundle/nsis/قسط‌یار_<version>_x64-setup.exe` (در GitHub Releases: `GhestYar_<version>_x64-setup.exe`)
 
 ### انتشار خودکار با GitHub Actions
 
@@ -89,7 +89,7 @@ npm run tauri build  # NSIS installer -> src-tauri/target/release/bundle/nsis/
 1. Update `CHANGELOG.md` and commit (working tree must be clean).
 2. `npm run release:patch` (or `release:minor` / `release:major`): bumps all files, commits, and creates the `vX.Y.Z` tag.
 3. `npm run tauri build`
-4. Installer: `src-tauri/target/release/bundle/nsis/قسط‌یار_<version>_x64-setup.exe`
+4. Installer: `src-tauri/target/release/bundle/nsis/قسط‌یار_<version>_x64-setup.exe` (on GitHub Releases: `GhestYar_<version>_x64-setup.exe`)
 
 ### Automated release (GitHub Actions)
 

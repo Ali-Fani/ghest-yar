@@ -5,6 +5,13 @@
 
 ## [Unreleased]
 
+## [1.1.1] - 2026-10-21
+
+English: Fix auto-update manifest publishing; release assets now use ASCII file names.
+
+### رفع‌شده
+- فایل `latest.json` در نسخهٔ ۱٫۱٫۰ منتشر نشد، چون GitHub نویسه‌های فارسی را از نام فایل‌ها حذف می‌کند؛ اکنون فایل‌های انتشار با نام `GhestYar_<نسخه>_x64-setup.exe` بارگذاری می‌شوند و به‌روزرسانی خودکار از ۱٫۱٫۰ به بعد کار می‌کند
+
 ## [1.1.0] - 2026-10-21
 
 English: In-app auto-update (signed releases via GitHub), with a Persian update card and a settings toggle.

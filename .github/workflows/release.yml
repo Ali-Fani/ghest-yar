@@ -68,6 +68,9 @@ jobs:
           # Uploads the NSIS setup .exe, its .sig, and latest.json (the updater manifest;
           # its notes are the releaseBody above). Prereleases (tags with '-') are flagged
           # prerelease, so GitHub's /releases/latest never serves them to the updater.
+          # GitHub strips non-ASCII characters from asset names, which breaks the
+          # updater JSON's signature lookup for the Persian productName. Upload ASCII names.
+          assetNamePattern: "GhestYar_[version]_[arch][setup][ext]"
           includeUpdaterJson: true
           updaterJsonPreferNsis: true
           args: --bundles nsis
