@@ -131,6 +131,8 @@ export function PlanWizard() {
     installment_amount: schedule!.installmentAmount, start_date: f.start, interval_type: f.intervalType,
     interval_value: intervalValue, color: f.color, icon: f.icon, notes: f.notes.trim() || null,
     archived: editing?.archived ?? 0,
+    kind: editing?.kind ?? "loan", provider_id: editing?.provider_id ?? null, store: editing?.store ?? null,
+    purchase_date: editing?.purchase_date ?? null, fee_type: editing?.fee_type ?? "none", fee_value: editing?.fee_value ?? 0,
   });
 
   const doSave = async () => {

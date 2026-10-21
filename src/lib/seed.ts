@@ -9,6 +9,7 @@ export async function seedDemo() {
   const today = todayISO();
   const base: Omit<NewPlan, "title" | "direction" | "total_amount" | "installment_count" | "installment_amount" | "start_date" | "color" | "icon"> = {
     counterparty: null, category: null, down_payment: 0, profit_rate: 0, interval_type: "monthly", interval_value: 1, notes: null, archived: 0,
+    kind: "loan", provider_id: null, store: null, purchase_date: null, fee_type: "none", fee_value: 0,
   };
   const defs = [
     { title: "وام خرید مسکن", counterparty: "بانک ملی", category: "وام بانکی", total: 600_000_000, down: 0, rate: 18, n: 24, start: addJalaliMonthsISO(today, -6), color: "#6366f1", icon: "home", dir: "payable" as const, paid: 6 },

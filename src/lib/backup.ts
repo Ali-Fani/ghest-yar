@@ -1,4 +1,4 @@
-import { isTauri } from "./db";
+import { isTauri, withPlanDefaults, withProviderDefaults, withStatementDefaults } from "./db";
 import { toJalali, todayISO } from "./jalali";
 import type { BackupFile } from "./types";
 
@@ -43,12 +43,26 @@ export async function readTextFileViaDialog(ext: string, label: string): Promise
   return readTextFile(path as string);
 }
 
+/** Validate a backup file and normalize it to the v2 shape. v1 backups get defaults for the new fields. */
 export function validateBackup(raw: unknown): BackupFile {
   const d = raw as Partial<BackupFile>;
   if (!d || d.app !== "ghestyar" || !Array.isArray(d.plans) || !Array.isArray(d.installments)) {
     throw new Error("فایل پشتیبان معتبر نیست");
   }
-  return { app: "ghestyar", version: 1, exported_at: d.exported_at ?? "", plans: d.plans, installments: d.installments, settings: d.settings ?? {} };
+  if (typeof d.version === "number" && d.version > 2) throw new Error("این پشتیبان با نسخهٔ جدیدتری ساخته شده است");
+  const arr = <T>(v: T[] | undefined): T[] => (Array.isArray(v) ? v : []);
+  return {
+    app: "ghestyar",
+    version: 2,
+    schemaVersion: 2,
+    exported_at: d.exported_at ?? "",
+    plans: d.plans.map((p) => withPlanDefaults(p)),
+    installments: d.installments,
+    providers: arr(d.providers).map((p) => withProviderDefaults(p)),
+    charges: arr(d.charges),
+    statements: arr(d.statements).map((s) => withStatementDefaults(s)),
+    settings: d.settings ?? {},
+  };
 }
 
 export function backupFileName(): string {
