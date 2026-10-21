@@ -7,3 +7,9 @@ export type PlanIconName = (typeof PLAN_ICONS)[number];
 
 export const INTERVAL_LABEL = { monthly: "ماهانه", weekly: "هفتگی", days: "هر چند روز" } as const;
 export const DIRECTION_LABEL = { payable: "بدهی من", receivable: "طلب من" } as const;
+
+export const PROVIDER_ICONS = ["card", "store", "landmark", "shopping", "smartphone", "wallet", "receipt", "gift"] as const;
+
+export const PLAN_KIND_LABEL = { loan: "وام", purchase: "خرید قسطی", pay_in_4: "Pay-in-4", bnpl: "BNPL", personal: "شخصی" } as const;
+export const FEE_LABEL = { none: "بدون کارمزد", fixed: "مبلغ ثابت", percent: "درصدی" } as const;
+export const PROVIDER_NAME_CHIPS = ["اسنپ‌پی", "دیجی‌پی", "تارا", "بانک", "فروشگاه"] as const;

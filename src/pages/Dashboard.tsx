@@ -5,17 +5,17 @@ import { AlertTriangle, ArrowLeft, Check, CalendarClock, HandCoins, PartyPopper,
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { YTick } from "../components/ChartBits";
 import { usePlans } from "../store/usePlans";
-import { useSettings } from "../store/useSettings";
 import { useUI } from "../store/useUI";
+import { useDerived } from "../lib/useDerived";
 import { JALALI_MONTHS, diffDays, formatJalaliLong, monthKey, shiftMonth, todayISO, toJalali } from "../lib/jalali";
 import { formatToman, formatTomanCompact } from "../lib/money";
 import { toFaDigits } from "../lib/digits";
-import { isOverdue, isPaid, remaining } from "../lib/status";
-import { quickPay } from "../lib/actions";
+import { isDueOverdue, isPayable } from "../lib/dueItems";
+import { dueHref, quickPayDue } from "../lib/actions";
 import { Card, SectionTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { EmptyState, PageHeader } from "../components/ui/Misc";
-import { InstallmentRow } from "../components/InstallmentRow";
+import { DueRow } from "../components/DueRow";
 import { PlanIcon } from "../components/ui/PlanIcon";
 import { seedDemo } from "../lib/seed";
 import { cn } from "../lib/utils";
@@ -23,64 +23,57 @@ import { cn } from "../lib/utils";
 const DONUT_COLORS = ["#10b981", "#0ea5e9", "#f59e0b", "#a855f7", "#f43f5e", "#14b8a6", "#6366f1", "#84cc16"];
 
 export function Dashboard() {
-  const { plans, installments } = usePlans();
+  const plans = usePlans((s) => s.plans);
   const openWizard = useUI((s) => s.openWizard);
-  const reminderDays = useSettings((s) => s.reminderDays);
-  const today = todayISO();
+  const { today, dueItems } = useDerived();
 
   const d = useMemo(() => {
-    const planById = new Map(plans.map((p) => [p.id, p]));
-    const live = installments.filter((i) => {
-      const p = planById.get(i.plan_id);
-      return p && !p.archived;
-    });
-    const pay = live.filter((i) => planById.get(i.plan_id)!.direction === "payable");
-    const rec = live.filter((i) => planById.get(i.plan_id)!.direction === "receivable");
+    const pay = dueItems.filter((i) => i.direction === "payable");
+    const rec = dueItems.filter((i) => i.direction === "receivable");
     const cur = monthKey(today);
     const sum = (a: typeof pay, f: (i: (typeof pay)[number]) => number) => a.reduce((s, i) => s + f(i), 0);
 
-    const thisMonth = pay.filter((i) => monthKey(i.due_date) === cur);
-    const overdue = pay.filter((i) => isOverdue(i, today)).sort((a, b) => a.due_date.localeCompare(b.due_date));
-    const upcoming = pay.filter((i) => !isPaid(i) && i.due_date >= today && diffDays(i.due_date, today) <= 30).sort((a, b) => a.due_date.localeCompare(b.due_date));
-    const nextUnpaid = pay.filter((i) => !isPaid(i)).sort((a, b) => a.due_date.localeCompare(b.due_date))[0] ?? null;
+    const thisMonth = pay.filter((i) => monthKey(i.dueDate) === cur);
+    const overdue = pay.filter((i) => isDueOverdue(i, today));
+    const upcoming = pay.filter((i) => !i.paid && i.dueDate >= today && diffDays(i.dueDate, today) <= 30);
+    const nextUnpaid = pay.find(isPayable) ?? null;
 
     // Next 12 Jalali months
     const j = toJalali(today);
     const months = Array.from({ length: 12 }, (_, k) => {
       const { y, m } = shiftMonth(j.y, j.m, k);
       const key = `${y}-${String(m).padStart(2, "0")}`;
-      const items = pay.filter((i) => monthKey(i.due_date) === key);
+      const items = pay.filter((i) => monthKey(i.dueDate) === key);
       return {
         name: JALALI_MONTHS[m - 1],
         label: `${JALALI_MONTHS[m - 1]} ${toFaDigits(y)}`,
-        paid: sum(items, (i) => Math.min(i.paid_amount, i.amount)),
-        unpaid: sum(items, remaining),
+        paid: sum(items, (i) => Math.min(i.paidAmount, i.amount)),
+        unpaid: sum(items, (i) => i.remaining),
       };
     });
 
     const byCat = new Map<string, number>();
     for (const i of pay) {
-      const c = planById.get(i.plan_id)!.category || "بدون دسته";
-      byCat.set(c, (byCat.get(c) ?? 0) + remaining(i));
+      const c = i.category || "بدون دسته";
+      byCat.set(c, (byCat.get(c) ?? 0) + i.remaining);
     }
     const cats = [...byCat.entries()].filter(([, v]) => v > 0).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
     return {
-      planById,
-      debt: sum(pay, remaining),
+      debt: sum(pay, (i) => i.remaining),
       monthDue: sum(thisMonth, (i) => i.amount),
-      monthPaid: sum(thisMonth, (i) => Math.min(i.paid_amount, i.amount)),
+      monthPaid: sum(thisMonth, (i) => Math.min(i.paidAmount, i.amount)),
       overdue,
-      overdueSum: sum(overdue, remaining),
+      overdueSum: sum(overdue, (i) => i.remaining),
       upcoming,
       nextUnpaid,
       months,
       cats,
       catTotal: cats.reduce((s, c) => s + c.value, 0),
-      recRemaining: sum(rec, remaining),
+      recRemaining: sum(rec, (i) => i.remaining),
       hasRec: rec.length > 0,
     };
-  }, [plans, installments, today]);
+  }, [dueItems, today]);
 
   if (plans.length === 0) {
     return (
@@ -106,9 +99,8 @@ export function Dashboard() {
   }
 
   const n = d.nextUnpaid;
-  const nPlan = n ? d.planById.get(n.plan_id)! : null;
-  const nDays = n ? diffDays(n.due_date, today) : 0;
-  const nOver = n ? n.due_date < today : false;
+  const nDays = n ? diffDays(n.dueDate, today) : 0;
+  const nOver = n ? n.dueDate < today : false;
   const monthPct = d.monthDue ? Math.round((d.monthPaid / d.monthDue) * 100) : 0;
 
   return (
@@ -156,7 +148,7 @@ export function Dashboard() {
             />
             <div className="relative flex h-full flex-col">
               <div className="text-[13px] font-medium text-muted">قسط بعدی</div>
-              {n && nPlan ? (
+              {n ? (
                 <>
                   <div className="mt-4 flex items-baseline gap-2">
                     <span className={cn("text-[64px] font-black leading-none tracking-tight num", nOver ? "text-danger" : "text-accent-strong")}>
@@ -164,18 +156,20 @@ export function Dashboard() {
                     </span>
                     {nDays !== 0 && <span className="text-lg font-bold text-muted">{nOver ? "روز گذشته" : "روز دیگر"}</span>}
                   </div>
-                  <div className="mt-1 text-[13px] text-muted num">{formatJalaliLong(n.due_date)}</div>
-                  <Link to={`/plans/${nPlan.id}`} className="mt-5 flex items-center gap-3 rounded-2xl bg-surface-2/70 p-3 transition-colors hover:bg-surface-2">
-                    <PlanIcon icon={nPlan.icon} color={nPlan.color} size={42} />
+                  <div className="mt-1 text-[13px] text-muted num">{formatJalaliLong(n.dueDate)}</div>
+                  <Link to={dueHref(n)} className="mt-5 flex items-center gap-3 rounded-2xl bg-surface-2/70 p-3 transition-colors hover:bg-surface-2">
+                    <PlanIcon icon={n.kind === "statement" ? "receipt" : n.icon} color={n.color} size={42} />
                     <div className="min-w-0 flex-1">
-                      <div className="truncate font-bold">{nPlan.title}</div>
-                      <div className="text-xs text-muted num">قسط {toFaDigits(n.seq)} از {toFaDigits(nPlan.installment_count)}</div>
+                      <div className="truncate font-bold">{n.title}</div>
+                      <div className="truncate text-xs text-muted num">
+                        {n.kind === "statement" ? "صورتحساب ماهانه" : `قسط ${toFaDigits(n.seq ?? 0)} از ${toFaDigits(n.count ?? 0)}${n.providerName ? ` · ${n.providerName}` : ""}`}
+                      </div>
                     </div>
                     <ArrowLeft size={16} className="text-muted" />
                   </Link>
                   <div className="mt-auto pt-5">
-                    <div className="mb-3 text-[22px] font-extrabold num">{formatToman(remaining(n))}</div>
-                    <Button variant="primary" size="lg" className="w-full" onClick={() => void quickPay(n.id)}>
+                    <div className="mb-3 text-[22px] font-extrabold num">{formatToman(n.remaining)}</div>
+                    <Button variant="primary" size="lg" className="w-full" onClick={() => void quickPayDue(n)}>
                       <Check size={19} strokeWidth={2.8} /> پرداخت شد
                     </Button>
                   </div>
@@ -243,7 +237,7 @@ export function Dashboard() {
           ) : (
             <div className="-mx-2 flex max-h-[340px] flex-col overflow-y-auto">
               {d.upcoming.map((i) => (
-                <InstallmentRow key={i.id} inst={i} plan={d.planById.get(i.plan_id)!} today={today} />
+                <DueRow key={i.key} item={i} today={today} />
               ))}
             </div>
           )}
@@ -259,7 +253,7 @@ export function Dashboard() {
           ) : (
             <div className="-mx-2 flex max-h-[340px] flex-col overflow-y-auto">
               {d.overdue.map((i) => (
-                <InstallmentRow key={i.id} inst={i} plan={d.planById.get(i.plan_id)!} today={today} />
+                <DueRow key={i.key} item={i} today={today} />
               ))}
             </div>
           )}

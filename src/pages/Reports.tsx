@@ -4,70 +4,59 @@ import { toast } from "sonner";
 import { BarChart3, ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { YTick } from "../components/ChartBits";
-import { usePlans } from "../store/usePlans";
+import { useDerived } from "../lib/useDerived";
+import type { DueItem } from "../lib/dueItems";
 import { JALALI_MONTHS, currentJalaliYear, formatJalaliShort, toJalali } from "../lib/jalali";
 import { formatToman, formatTomanCompact } from "../lib/money";
 import { toFaDigits } from "../lib/digits";
-import { isPaid, remaining, statusOf, STATUS_LABEL } from "../lib/status";
+import { STATUS_LABEL } from "../lib/status";
 import { buildCsv, saveTextFile } from "../lib/backup";
-import { DIRECTION_LABEL } from "../lib/constants";
+import { DIRECTION_LABEL, PLAN_KIND_LABEL } from "../lib/constants";
 import { Card, SectionTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { EmptyState, PageHeader, Segmented } from "../components/ui/Misc";
-import { todayISO } from "../lib/jalali";
-import { useSettings } from "../store/useSettings";
 import { cn } from "../lib/utils";
 
 type Dir = "all" | "payable" | "receivable";
 
 export function Reports() {
-  const { plans, installments } = usePlans();
-  const reminderDays = useSettings((s) => s.reminderDays);
+  const { dueItems } = useDerived();
   const [year, setYear] = useState(currentJalaliYear());
   const [dir, setDir] = useState<Dir>("payable");
-  const today = todayISO();
 
   const data = useMemo(() => {
-    const planById = new Map(plans.map((p) => [p.id, p]));
-    const rows = installments.filter((i) => {
-      const p = planById.get(i.plan_id);
-      if (!p || p.archived) return false;
-      if (dir !== "all" && p.direction !== dir) return false;
-      return toJalali(i.due_date).y === year;
+    const rows = dueItems.filter((i) => {
+      if (dir !== "all" && i.direction !== dir) return false;
+      return toJalali(i.dueDate).y === year;
     });
     const months = Array.from({ length: 12 }, (_, k) => {
-      const items = rows.filter((i) => toJalali(i.due_date).m === k + 1);
+      const items = rows.filter((i) => toJalali(i.dueDate).m === k + 1);
       return {
         name: JALALI_MONTHS[k],
         count: items.length,
         due: items.reduce((s, i) => s + i.amount, 0),
-        paid: items.reduce((s, i) => s + Math.min(i.paid_amount, i.amount), 0),
-        left: items.reduce((s, i) => s + remaining(i), 0),
+        paid: items.reduce((s, i) => s + Math.min(i.paidAmount, i.amount), 0),
+        left: items.reduce((s, i) => s + i.remaining, 0),
       };
     });
     return {
-      planById,
       rows,
       months,
       due: months.reduce((s, m) => s + m.due, 0),
       paid: months.reduce((s, m) => s + m.paid, 0),
       left: months.reduce((s, m) => s + m.left, 0),
-      done: rows.filter(isPaid).length,
+      done: rows.filter((i) => i.paid).length,
     };
-  }, [plans, installments, year, dir]);
+  }, [dueItems, year, dir]);
 
   const exportCsv = async () => {
-    const head = ["عنوان", "نوع", "طرف حساب", "دسته", "شماره قسط", "تاریخ سررسید", "مبلغ (تومان)", "پرداخت‌شده (تومان)", "تاریخ پرداخت", "وضعیت"];
-    const body = data.rows
-      .slice()
-      .sort((a, b) => a.due_date.localeCompare(b.due_date))
-      .map((i) => {
-        const p = data.planById.get(i.plan_id)!;
-        return [
-          p.title, DIRECTION_LABEL[p.direction], p.counterparty ?? "", p.category ?? "", toFaDigits(i.seq), formatJalaliShort(i.due_date),
-          i.amount, i.paid_amount, i.paid_date ? formatJalaliShort(i.paid_date) : "", STATUS_LABEL[statusOf(i, today, reminderDays)],
-        ];
-      });
+    const head = ["عنوان", "نوع", "نوع قسط", "ارائه‌دهنده", "طرف حساب", "دسته", "شماره قسط", "تاریخ سررسید", "مبلغ (تومان)", "پرداخت‌شده (تومان)", "وضعیت"];
+    const kindLabel = (i: DueItem) => (i.kind === "statement" ? "صورتحساب" : i.planKind ? PLAN_KIND_LABEL[i.planKind] : "");
+    const body = data.rows.map((i) => [
+      i.title, DIRECTION_LABEL[i.direction], kindLabel(i), i.providerName ?? "", i.counterparty ?? "",
+      i.category ?? "", i.kind === "installment" ? toFaDigits(i.seq ?? 0) : "", formatJalaliShort(i.dueDate), i.amount, i.paidAmount,
+      i.open ? "صورتحساب جاری" : STATUS_LABEL[i.status],
+    ]);
     const ok = await saveTextFile(`ghestyar-report-${year}.csv`, buildCsv([head, ...body]), "csv", "فایل CSV");
     if (ok) toast.success("گزارش ذخیره شد");
   };

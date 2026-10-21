@@ -1,12 +1,12 @@
 import {
-  Briefcase, Car, Gift, GraduationCap, HeartPulse, Home, Landmark, Laptop, Plane, ShoppingBag, Smartphone, Sofa, User, Wallet,
+  Briefcase, Car, CreditCard, Gift, GraduationCap, HeartPulse, Home, Landmark, Laptop, Plane, Receipt, ShoppingBag, Store, Smartphone, Sofa, User, Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 export const ICON_MAP: Record<string, LucideIcon> = {
   wallet: Wallet, home: Home, car: Car, landmark: Landmark, smartphone: Smartphone, laptop: Laptop, graduation: GraduationCap,
-  heart: HeartPulse, shopping: ShoppingBag, sofa: Sofa, plane: Plane, briefcase: Briefcase, user: User, gift: Gift,
+  heart: HeartPulse, shopping: ShoppingBag, card: CreditCard, store: Store, receipt: Receipt, sofa: Sofa, plane: Plane, briefcase: Briefcase, user: User, gift: Gift,
 };
 
 export function PlanIcon({ icon, color, size = 44, className }: { icon: string; color: string; size?: number; className?: string }) {

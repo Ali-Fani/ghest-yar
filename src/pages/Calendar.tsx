@@ -1,37 +1,33 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
-import { usePlans } from "../store/usePlans";
+import { useDerived } from "../lib/useDerived";
+import type { DueItem } from "../lib/dueItems";
 import { WEEK_HEADERS, formatJalaliLong, formatMonthYear, monthGrid, shiftMonth, toJalali, todayISO } from "../lib/jalali";
 import { toFaDigits } from "../lib/digits";
-import { isPaid } from "../lib/status";
 import { formatToman } from "../lib/money";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
-import { InstallmentRow } from "../components/InstallmentRow";
+import { DueRow } from "../components/DueRow";
 import { PageHeader } from "../components/ui/Misc";
 import { cn } from "../lib/utils";
 
 export function CalendarPage() {
-  const { plans, installments } = usePlans();
-  const today = todayISO();
+  const { today, dueItems } = useDerived();
   const tj = toJalali(today);
   const [view, setView] = useState({ y: tj.y, m: tj.m });
   const [selected, setSelected] = useState<string>(today);
   const [dirn, setDirn] = useState(1);
 
-  const planById = useMemo(() => new Map(plans.map((p) => [p.id, p])), [plans]);
   const byDate = useMemo(() => {
-    const m = new Map<string, typeof installments>();
-    for (const i of installments) {
-      const p = planById.get(i.plan_id);
-      if (!p || p.archived) continue;
-      const arr = m.get(i.due_date) ?? [];
+    const m = new Map<string, DueItem[]>();
+    for (const i of dueItems) {
+      const arr = m.get(i.dueDate) ?? [];
       arr.push(i);
-      m.set(i.due_date, arr);
+      m.set(i.dueDate, arr);
     }
     return m;
-  }, [installments, planById]);
+  }, [dueItems]);
 
   const cells = monthGrid(view.y, view.m);
   const go = (d: number) => {
@@ -44,7 +40,7 @@ export function CalendarPage() {
   };
 
   const dayItems = byDate.get(selected) ?? [];
-  const monthTotal = cells.filter((c) => c.inMonth).reduce((s, c) => s + (byDate.get(c.iso) ?? []).filter((i) => !isPaid(i)).reduce((a, i) => a + (i.amount - i.paid_amount), 0), 0);
+  const monthTotal = cells.filter((c) => c.inMonth).reduce((s, c) => s + (byDate.get(c.iso) ?? []).filter((i) => !i.paid && i.direction === "payable").reduce((a, i) => a + i.remaining, 0), 0);
 
   return (
     <div>
@@ -116,16 +112,15 @@ export function CalendarPage() {
                     </span>
                     <div className="flex flex-col gap-0.5">
                       {items.slice(0, 2).map((i) => {
-                        const p = planById.get(i.plan_id)!;
-                        const paid = isPaid(i);
-                        const overdue = !paid && i.due_date < today;
+                        const paid = i.paid;
+                        const overdue = !paid && !i.open && i.dueDate < today;
                         return (
                           <span
-                            key={i.id}
+                            key={i.key}
                             className={cn("truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-4", paid && "line-through opacity-60", overdue && "ring-1 ring-danger")}
-                            style={{ background: `color-mix(in srgb, ${p.color} 18%, transparent)`, color: p.color }}
+                            style={{ background: `color-mix(in srgb, ${i.color} 18%, transparent)`, color: i.color }}
                           >
-                            {p.title}
+                            {i.title}
                           </span>
                         );
                       })}
@@ -148,7 +143,7 @@ export function CalendarPage() {
           ) : (
             <div className="-mx-2 flex flex-col">
               {dayItems.map((i) => (
-                <InstallmentRow key={i.id} inst={i} plan={planById.get(i.plan_id)!} today={today} showDate={false} />
+                <DueRow key={i.key} item={i} today={today} showDate={false} />
               ))}
             </div>
           )}

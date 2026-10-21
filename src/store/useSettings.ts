@@ -10,9 +10,11 @@ export interface Settings {
   launchCheck: boolean;
   autoUpdate: boolean;
   sidebarCollapsed: boolean;
+  /** Heads-up one day before a statement cycle closes (off by default). */
+  closeHeadsUp: boolean;
 }
 
-const DEFAULTS: Settings = { theme: "system", reminderDays: 3, notifications: true, launchCheck: true, autoUpdate: true, sidebarCollapsed: false };
+const DEFAULTS: Settings = { theme: "system", reminderDays: 3, notifications: true, launchCheck: true, autoUpdate: true, sidebarCollapsed: false, closeHeadsUp: false };
 
 interface State extends Settings {
   raw: Record<string, string>;
@@ -33,6 +35,7 @@ function parse(raw: Record<string, string>): Settings {
     launchCheck: bool("launchCheck", DEFAULTS.launchCheck),
     autoUpdate: bool("autoUpdate", DEFAULTS.autoUpdate),
     sidebarCollapsed: bool("sidebarCollapsed", DEFAULTS.sidebarCollapsed),
+    closeHeadsUp: bool("closeHeadsUp", DEFAULTS.closeHeadsUp),
   };
 }
 

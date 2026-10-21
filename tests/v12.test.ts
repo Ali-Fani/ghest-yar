@@ -6,6 +6,7 @@ import {
 } from "../src/lib/cycles";
 import { buildAllStatements, buildDueItems, compareDue, groupByProviderDay, isPayable, type DueItem } from "../src/lib/dueItems";
 import { creditTone, creditUsage, formatUsage, providerCreditUsage } from "../src/lib/creditUsage";
+import { composeReminder } from "../src/lib/notify";
 import { validateBackup } from "../src/lib/backup";
 import { getRepo, resetRepoForTests, withProviderDefaults } from "../src/lib/db";
 import type { Charge, Installment, Plan, Provider, Statement } from "../src/lib/types";
@@ -322,7 +323,7 @@ describe("credit usage", () => {
   const mkItem = (over: Partial<DueItem>): DueItem => ({
     key: "x", kind: "installment", id: 1, providerId: 1, providerName: "p", planId: 1, planKind: "pay_in_4", title: "t",
     dueDate: "2026-01-01", amount: 1_000_000, paidAmount: 0, paid: false, remaining: 1_000_000, status: "upcoming",
-    direction: "payable", category: null, color: "#000", icon: "card", ...over,
+    direction: "payable", category: null, counterparty: null, color: "#000", icon: "card", ...over,
   });
 
   it("counts unpaid installments, unpaid closed statements and the open cycle's charges", () => {
@@ -431,5 +432,42 @@ describe("backup", () => {
     expect(d2.charges).toHaveLength(1);
     expect(d2.statements).toHaveLength(1);
     expect(d2.providers[0].name).toBe("اسنپ‌پی");
+  });
+});
+
+/* ------------------------------ reminders ------------------------------ */
+
+describe("reminders", () => {
+  const today = J(1405, 9, 3);
+  const mk = (over: Partial<DueItem>): DueItem => ({
+    key: "x", kind: "installment", id: 1, providerId: 1, providerName: "دیجی‌پی", planId: 1, planKind: "pay_in_4", title: "t",
+    dueDate: today, amount: 1_000_000, paidAmount: 0, paid: false, remaining: 1_000_000, status: "due-soon",
+    direction: "payable", category: null, counterparty: null, color: "#000", icon: "card", ...over,
+  });
+
+  it("mentions statements with their own line", () => {
+    const stmt = mk({ key: "s:1", kind: "statement", id: 1, title: "صورتحساب دیجی‌پی", dueDate: J(1405, 9, 5), amount: 3_100_000, remaining: 3_100_000 });
+    const r = composeReminder([stmt], today, 3)!;
+    expect(r.body).toBe("صورتحساب دیجی‌پی تا ۲ روز دیگر — ۳٫۱ میلیون");
+    expect(r.signature).toBe("s:1");
+  });
+
+  it("groups installments, skips open cycles and far-away items", () => {
+    const items = [
+      mk({ key: "i:1", id: 1 }),
+      mk({ key: "i:2", id: 2, dueDate: J(1405, 9, 1) }),
+      mk({ key: "s:9", kind: "statement", id: 9, open: true, dueDate: J(1405, 9, 4) }),
+      mk({ key: "i:3", id: 3, dueDate: J(1405, 10, 20) }),
+    ];
+    const r = composeReminder(items, today, 3)!;
+    expect(r.body).toContain("۱ قسط معوق و ۱ قسط تا ۳ روز آینده سررسید دارد");
+    expect(r.body).not.toContain("صورتحساب");
+    expect(composeReminder([items[3]], today, 3)).toBeNull();
+  });
+
+  it("adds the close-day heads-up when asked", () => {
+    const view = { key: "1:a", amount: 2_000_000 } as never;
+    const r = composeReminder([], today, 3, [{ provider: prov(), view }])!;
+    expect(r.body).toBe("صورتحساب دیجی‌پی فردا بسته می‌شود — ۲ میلیون");
   });
 });

@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { cn } from "../../lib/utils";
 import { toFaDigits } from "../../lib/digits";
 import { todayISO } from "../../lib/jalali";
-import { isOverdue } from "../../lib/status";
-import { usePlans } from "../../store/usePlans";
+import { isDueOverdue } from "../../lib/dueItems";
+import { useDerived } from "../../lib/useDerived";
 import { useSettings, type Theme } from "../../store/useSettings";
 import { useUI } from "../../store/useUI";
 import { Tip } from "../ui/Misc";
@@ -29,19 +29,14 @@ export function Sidebar() {
   const theme = useSettings((s) => s.theme);
   const setSetting = useSettings((s) => s.set);
   const openWizard = useUI((s) => s.openWizard);
-  const installments = usePlans((s) => s.installments);
-  const plans = usePlans((s) => s.plans);
+  const { today, dueItems } = useDerived();
   const loc = useLocation();
   const [version, setVersion] = useState(BUILD_VERSION);
   useEffect(() => {
     void getAppVersion().then(setVersion);
   }, []);
 
-  const overdue = useMemo(() => {
-    const today = todayISO();
-    const active = new Set(plans.filter((p) => !p.archived && p.direction === "payable").map((p) => p.id));
-    return installments.filter((i) => active.has(i.plan_id) && isOverdue(i, today)).length;
-  }, [installments, plans]);
+  const overdue = useMemo(() => dueItems.filter((i) => i.direction === "payable" && isDueOverdue(i, today)).length, [dueItems, today]);
 
   const ThemeIcon = theme === "light" ? Sun : theme === "dark" ? Moon : Monitor;
 

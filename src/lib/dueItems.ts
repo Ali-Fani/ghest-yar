@@ -26,6 +26,7 @@ export interface DueItem {
   status: InstallmentStatus;
   direction: Direction;
   category: string | null;
+  counterparty: string | null;
   color: string;
   icon: string;
   /** installments: sequence in the plan and the plan's count */
@@ -87,6 +88,7 @@ export function buildDueItems(input: DueInput): DueItem[] {
       status: statusOf(i, today, reminderDays),
       direction: p.direction,
       category: p.category,
+      counterparty: p.counterparty,
       color: p.color,
       icon: p.icon,
       seq: i.seq,
@@ -117,6 +119,7 @@ export function buildDueItems(input: DueInput): DueItem[] {
       status: open ? "upcoming" : statusOf(input, today, reminderDays),
       direction: "payable",
       category: STATEMENT_CATEGORY,
+      counterparty: prov.name,
       color: prov.color,
       icon: prov.icon,
       open,
