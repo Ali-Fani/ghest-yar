@@ -6,7 +6,7 @@ export interface Repo {
   load(): Promise<{ plans: Plan[]; installments: Installment[]; settings: Record<string, string> }>;
   insertPlan(plan: NewPlan, items: NewInstallment[]): Promise<number>;
   updatePlan(id: number, patch: Partial<NewPlan>): Promise<void>;
-  /** Delete unpaid installments of a plan and insert the given ones. */
+  /** Delete untouched (paid_amount = 0) installments of a plan and insert the given ones. */
   replaceUnpaid(planId: number, items: NewInstallment[]): Promise<void>;
   deletePlan(id: number): Promise<void>;
   updateInstallment(id: number, patch: Partial<Pick<Installment, "amount" | "due_date" | "paid_amount" | "paid_date" | "note">>): Promise<void>;
@@ -81,7 +81,7 @@ class SqliteRepo implements Repo {
   }
 
   async replaceUnpaid(planId: number, items: NewInstallment[]) {
-    await this.db.execute("DELETE FROM installments WHERE plan_id = $1 AND paid_amount < amount", [planId]);
+    await this.db.execute("DELETE FROM installments WHERE plan_id = $1 AND paid_amount = 0", [planId]);
     await this.insertItems(planId, items);
   }
 
@@ -181,7 +181,7 @@ class MemoryRepo implements Repo {
     this.save();
   }
   async replaceUnpaid(planId: number, items: NewInstallment[]) {
-    this.s.installments = this.s.installments.filter((i) => !(i.plan_id === planId && i.paid_amount < i.amount));
+    this.s.installments = this.s.installments.filter((i) => !(i.plan_id === planId && i.paid_amount === 0));
     this.addItems(planId, items);
     this.save();
   }
