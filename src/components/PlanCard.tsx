@@ -62,10 +62,12 @@ export function PlanCard({ s, index = 0, list }: { s: PlanStats; index?: number;
           <div>
             <div className="text-xs text-muted">{s.next ? "قسط بعدی" : "وضعیت"}</div>
             {s.next ? (
-              <div className="flex items-center gap-1.5 text-[13px] font-medium">
-                <CalendarClock size={14} className={s.next.due_date < todayISO() ? "text-danger" : "text-muted"} />
-                <span className="num">{formatJalaliMedium(s.next.due_date)}</span>
-                <span className="text-xs text-muted">({relativeLabel(s.next.due_date)})</span>
+              <div>
+                <div className="flex items-center gap-1.5 whitespace-nowrap text-[13px] font-medium">
+                  <CalendarClock size={14} className={s.next.due_date < todayISO() ? "text-danger" : "text-muted"} />
+                  <span className="num">{formatJalaliMedium(s.next.due_date)}</span>
+                </div>
+                <div className={cn("text-xs", s.next.due_date < todayISO() ? "text-danger-ink" : "text-muted")}>{relativeLabel(s.next.due_date)}</div>
               </div>
             ) : (
               <div className="text-[13px] font-medium text-accent-ink">پایان یافته</div>

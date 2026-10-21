@@ -1,4 +1,5 @@
 import { isTauri } from "./db";
+import { toJalali, todayISO } from "./jalali";
 import type { BackupFile } from "./types";
 
 function browserDownload(name: string, content: string, mime: string) {
@@ -51,9 +52,9 @@ export function validateBackup(raw: unknown): BackupFile {
 }
 
 export function backupFileName(): string {
-  const d = new Date();
+  const j = toJalali(todayISO());
   const p = (n: number) => String(n).padStart(2, "0");
-  return `ghestyar-backup-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}.json`;
+  return `ghestyar-backup-${j.y}${p(j.m)}${p(j.d)}.json`;
 }
 
 /** Quote a CSV cell. */

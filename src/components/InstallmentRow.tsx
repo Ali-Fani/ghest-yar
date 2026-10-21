@@ -33,11 +33,17 @@ export function InstallmentRow({ inst, plan, today, showDate = true }: { inst: I
         <div className={cn("text-[14px] font-bold num", paid && "text-muted line-through")}>{formatToman(paid ? inst.amount : remaining(inst))}</div>
       </div>
       {!paid ? (
-        <Button size="sm" variant="soft" className="opacity-80 transition-opacity group-hover:opacity-100" onClick={() => void quickPay(inst.id)}>
-          <Check size={14} /> پرداخت شد
+        <Button
+          size="sm"
+          variant="soft"
+          className={cn("opacity-80 transition-opacity group-hover:opacity-100", !showDate && "px-2.5")}
+          title="پرداخت شد"
+          onClick={() => void quickPay(inst.id)}
+        >
+          <Check size={14} /> {showDate && "پرداخت شد"}
         </Button>
       ) : (
-        <span className="flex w-[100px] justify-center text-accent-ink">
+        <span className={cn("flex justify-center text-accent-ink", showDate ? "w-[100px]" : "w-9")}>
           <Check size={18} />
         </span>
       )}

@@ -23,7 +23,7 @@ export function Select({
 }) {
   return (
     <RSelect.Root value={value} onValueChange={onValueChange} dir="rtl">
-      <RSelect.Trigger className={cn(inputCls, "flex cursor-pointer items-center justify-between gap-2 text-start", className)}>
+      <RSelect.Trigger className={cn(inputCls, "flex cursor-pointer items-center justify-between gap-2 whitespace-nowrap text-start", className)}>
         <RSelect.Value placeholder={placeholder} />
         <RSelect.Icon>
           <ChevronDown size={16} className="text-muted" />

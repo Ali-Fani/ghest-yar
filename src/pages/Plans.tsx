@@ -90,21 +90,21 @@ export function Plans() {
               value={dir}
               onValueChange={setDir}
               options={[
-                { value: "all", label: "همه (بدهی و طلب)" },
+                { value: "all", label: "همه انواع" },
                 { value: "payable", label: "بدهی من" },
                 { value: "receivable", label: "طلب من" },
               ]}
             />
             <Select className="w-40" value={cat} onValueChange={setCat} options={[{ value: "all", label: "همه دسته‌ها" }, ...CATEGORIES.map((c) => ({ value: c, label: c }))]} />
             <Select
-              className="w-44"
+              className="w-48"
               value={sort}
               onValueChange={setSort}
               options={[
-                { value: "due", label: "مرتب‌سازی: سررسید نزدیک" },
-                { value: "remaining", label: "مرتب‌سازی: مانده بیشتر" },
-                { value: "newest", label: "مرتب‌سازی: تازه‌ترین" },
-                { value: "name", label: "مرتب‌سازی: نام" },
+                { value: "due", label: "نزدیک‌ترین سررسید" },
+                { value: "remaining", label: "بیشترین مانده" },
+                { value: "newest", label: "تازه‌ترین" },
+                { value: "name", label: "بر اساس نام" },
               ]}
             />
             <div className="ms-auto flex items-center gap-3">

@@ -70,7 +70,7 @@ export function CalendarPage() {
         }
       />
 
-      <div className="grid grid-cols-[1fr_340px] items-start gap-5">
+      <div className="grid grid-cols-[1fr_380px] items-start gap-5">
         <Card className="overflow-hidden">
           <div className="grid grid-cols-7 border-b border-line bg-surface-2/50">
             {WEEK_HEADERS.map((w, i) => (

@@ -13,7 +13,7 @@ import { formatToman } from "../lib/money";
 import { toFaDigits } from "../lib/digits";
 import { statusOf, isPaid, remaining } from "../lib/status";
 import { quickPay } from "../lib/actions";
-import { DIRECTION_LABEL, INTERVAL_LABEL } from "../lib/constants";
+import { DIRECTION_LABEL } from "../lib/constants";
 import type { Installment } from "../lib/types";
 import { Badge, StatusBadge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -97,7 +97,7 @@ export function PlanDetail() {
             </div>
             <div className="mt-1 text-[13.5px] text-muted">
               {plan.counterparty || "—"} · {plan.interval_value > 1 ? `هر ${toFaDigits(plan.interval_value)} ` : "هر "}
-              {plan.interval_type === "monthly" ? "ماه" : plan.interval_type === "weekly" ? "هفته" : "روز"} ({INTERVAL_LABEL[plan.interval_type]})
+              {plan.interval_type === "monthly" ? "ماه" : plan.interval_type === "weekly" ? "هفته" : "روز"}
               {plan.profit_rate > 0 && <> · سود {toFaDigits(plan.profit_rate)}٪ سالانه</>}
             </div>
             {plan.notes && (

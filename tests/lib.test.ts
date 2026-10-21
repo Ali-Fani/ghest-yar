@@ -201,3 +201,19 @@ describe("status", () => {
     expect(isOverdue(mk(today), today)).toBe(false);
   });
 });
+
+import { buildCsv, csvCell, validateBackup } from "../src/lib/backup";
+
+describe("backup & csv", () => {
+  it("builds a BOM-prefixed CSV with quoting", () => {
+    const csv = buildCsv([["الف", "ب,ج"], [1, 'x"y']]);
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    expect(csv).toContain('الف,"ب,ج"');
+    expect(csvCell('x"y')).toBe('"x""y"');
+  });
+  it("validates backups", () => {
+    expect(() => validateBackup({})).toThrow();
+    const ok = validateBackup({ app: "ghestyar", version: 1, plans: [], installments: [] });
+    expect(ok.settings).toEqual({});
+  });
+});

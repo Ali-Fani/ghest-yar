@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion } from "motion/react";
 import { AlertTriangle, ArrowLeft, Check, CalendarClock, HandCoins, PartyPopper, PiggyBank, Plus, Sparkles, TrendingDown, WalletCards } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { YTick } from "../components/ChartBits";
 import { usePlans } from "../store/usePlans";
 import { useSettings } from "../store/useSettings";
 import { useUI } from "../store/useUI";
@@ -208,8 +209,8 @@ export function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={d.months} margin={{ top: 8, right: 4, left: 4, bottom: 0 }} barCategoryGap="22%">
                   <CartesianGrid vertical={false} stroke="var(--line)" strokeDasharray="3 4" />
-                  <XAxis dataKey="name" reversed tickLine={false} axisLine={false} interval={0} tick={{ fill: "var(--muted)", fontSize: 11, fontFamily: "inherit" }} />
-                  <YAxis orientation="right" tickLine={false} axisLine={false} width={74} tickFormatter={(v: number) => (v ? formatTomanCompact(v) : "۰")} tick={{ fill: "var(--muted)", fontSize: 11, fontFamily: "inherit" }} />
+                  <XAxis dataKey="name" reversed tickLine={false} axisLine={false} interval={0} tick={{ fill: "var(--muted)", fontSize: 10.5, fontFamily: "inherit" }} />
+                  <YAxis orientation="right" tickLine={false} axisLine={false} width={84} tick={<YTick />} />
                   <Tooltip
                     cursor={{ fill: "var(--surface-2)", opacity: 0.6 }}
                     content={({ active, payload }) => {
