@@ -5,6 +5,18 @@
 
 ## [Unreleased]
 
+## [1.1.2] - 2026-10-21
+
+English: Roomier dashboard layout; installment rows no longer wrap or overlap; readable chart month labels.
+
+### تغییر‌یافته
+- چیدمان داشبورد بازتر شد: فهرست‌های «۳۰ روز آینده» و «معوقات» کنار هم و پهن‌تر، و نمودار دسته‌ها در ردیفی جداگانه
+- بیشینهٔ پهنای محتوا از ۱۳۲۰ به ۱۶۰۰ پیکسل افزایش یافت
+
+### رفع‌شده
+- شکستن و هم‌پوشانی متن در ردیف‌های اقساط؛ برچسب زمانی («امروز»، «۳ روز دیگر») اکنون زیر مبلغ نمایش داده می‌شود
+- هم‌پوشانی نام ماه‌ها در نمودار ۱۲ ماهه در پنجره‌های باریک
+
 ## [1.1.1] - 2026-10-21
 
 English: Fix auto-update manifest publishing; release assets now use ASCII file names.
