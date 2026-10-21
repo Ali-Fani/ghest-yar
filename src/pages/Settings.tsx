@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Bell, Database, Download, Info, Monitor, Moon, Palette, Sparkles, Sun, Trash2, Upload } from "lucide-react";
+import { Bell, CheckCircle2, Database, Download, Info, Loader2, RefreshCw, TriangleAlert, Monitor, Moon, Palette, Sparkles, Sun, Trash2, Upload } from "lucide-react";
 import { useSettings, type Theme } from "../store/useSettings";
 import { usePlans } from "../store/usePlans";
 import { Card } from "../components/ui/Card";
@@ -9,6 +9,8 @@ import { ConfirmDialog } from "../components/ui/Dialog";
 import { NumInput } from "../components/ui/Input";
 import { PageHeader, Segmented, Switch } from "../components/ui/Misc";
 import { Logo } from "../components/layout/Logo";
+import { useUpdater } from "../lib/updater";
+import { isTauri } from "../lib/db";
 import { BUILD_VERSION, faVersion, getAppVersion } from "../lib/version";
 import { backupFileName, readTextFileViaDialog, saveTextFile, validateBackup } from "../lib/backup";
 import { checkReminders, buildReminder } from "../lib/notify";
@@ -42,6 +44,7 @@ function Row({ title, desc, children }: { title: string; desc?: string; children
 export function SettingsPage() {
   const s = useSettings();
   const { plans, exportData, importData, clearAll } = usePlans();
+  const upd = useUpdater();
   const [appVersion, setAppVersion] = useState(BUILD_VERSION);
   useEffect(() => {
     void getAppVersion().then(setAppVersion);
@@ -149,6 +152,49 @@ export function SettingsPage() {
             <div className="text-[13px] text-muted">نسخهٔ {faVersion(appVersion)} · مدیریت اقساط با تقویم شمسی و تومان</div>
             <div className="text-xs text-muted">همه داده‌ها فقط روی همین رایانه ذخیره می‌شود.</div>
           </div>
+        </div>
+        <div className="mt-4 flex flex-col divide-y divide-line border-t border-line pt-1">
+          <Row title="بررسی خودکار به‌روزرسانی" desc="پنج ثانیه پس از اجرا و سپس هر ۶ ساعت، بی‌صدا بررسی می‌شود">
+            <Switch checked={s.autoUpdate} onCheckedChange={(v) => void s.set("autoUpdate", v)} />
+          </Row>
+          <Row
+            title="به‌روزرسانی برنامه"
+            desc={
+              !isTauri()
+                ? "در نسخهٔ مرورگر (حالت توسعه) به‌روزرسانی در دسترس نیست"
+                : upd.status === "checking"
+                  ? "در حال بررسی…"
+                  : upd.status === "uptodate"
+                    ? undefined
+                    : upd.status === "error"
+                      ? undefined
+                      : upd.status === "available"
+                        ? `نسخهٔ ${faVersion(upd.version ?? "")} آمادهٔ نصب است`
+                        : "از وجود نسخهٔ جدید مطمئن شوید"
+            }
+          >
+            <div className="flex items-center gap-3">
+              {upd.status === "uptodate" && (
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-accent-ink">
+                  <CheckCircle2 size={16} /> آخرین نسخه را دارید
+                </span>
+              )}
+              {upd.status === "error" && (
+                <span className="flex max-w-[260px] items-center gap-1.5 text-[12px] text-danger-ink">
+                  <TriangleAlert size={15} className="shrink-0" /> {upd.error}
+                </span>
+              )}
+              {upd.status === "available" ? (
+                <Button variant="primary" onClick={() => void upd.install()}>
+                  <Download size={16} /> نصب و راه‌اندازی مجدد
+                </Button>
+              ) : (
+                <Button variant="secondary" disabled={!isTauri() || upd.status === "checking" || upd.status === "downloading" || upd.status === "installing"} onClick={() => void upd.check()}>
+                  {upd.status === "checking" ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />} بررسی به‌روزرسانی
+                </Button>
+              )}
+            </div>
+          </Row>
         </div>
       </Section>
 

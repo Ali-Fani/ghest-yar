@@ -9,6 +9,7 @@ import { Reports } from "./pages/Reports";
 import { SettingsPage } from "./pages/Settings";
 import { usePlans } from "./store/usePlans";
 import { startReminderLoop } from "./lib/notify";
+import { startUpdateLoop } from "./lib/updater";
 import { Logo } from "./components/layout/Logo";
 
 export function App() {
@@ -16,7 +17,10 @@ export function App() {
   const init = usePlans((s) => s.init);
 
   useEffect(() => {
-    void init().then(() => startReminderLoop());
+    void init().then(() => {
+      startReminderLoop();
+      startUpdateLoop();
+    });
   }, [init]);
 
   // Block the native context menu / reload shortcuts in production feel.

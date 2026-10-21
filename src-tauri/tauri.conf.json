@@ -28,9 +28,17 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMwRUFDM0E0QkEzOUE2NjIKUldSaXBqbTZwTVBxd0FNL2pTVDJRSXpGV1JjRCtjUDhLeStPbXp6dThRNlhPT1J6SGRVbEs3ek0K",
+      "endpoints": ["https://github.com/Ali-Fani/ghest-yar/releases/latest/download/latest.json"],
+      "windows": { "installMode": "passive" }
+    }
+  },
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "createUpdaterArtifacts": true,
     "publisher": "قسط‌یار",
     "shortDescription": "مدیریت اقساط",
     "longDescription": "قسط‌یار، برنامهٔ دسکتاپ فارسی برای مدیریت اقساط با تقویم شمسی و واحد تومان؛ همهٔ داده‌ها فقط روی همین رایانه ذخیره می‌شود.",

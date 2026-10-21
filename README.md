@@ -1,7 +1,7 @@
 # قسط‌یار (Ghest-Yar)
 
-[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
-[![Release](https://github.com/OWNER/REPO/actions/workflows/release.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/release.yml)
+[![CI](https://github.com/Ali-Fani/ghest-yar/actions/workflows/ci.yml/badge.svg)](https://github.com/Ali-Fani/ghest-yar/actions/workflows/ci.yml)
+[![Release](https://github.com/Ali-Fani/ghest-yar/actions/workflows/release.yml/badge.svg)](https://github.com/Ali-Fani/ghest-yar/actions/workflows/release.yml)
 
 برنامه دسکتاپ ویندوز برای مدیریت اقساط، کاملاً فارسی و راست‌به‌چپ، با تقویم شمسی و واحد پول تومان.
 
@@ -45,7 +45,7 @@ npm run tauri build    # ساخت نصب‌کننده NSIS
 
 ### انتشار خودکار با GitHub Actions
 
-به‌جای ساخت دستی، پس از `npm run release:patch` کافی است `git push --follow-tags` بزنید. گردش‌کار `.github/workflows/release.yml` با برچسب `vX.Y.Z` اجرا می‌شود، آزمون‌ها و بررسی نوع را انجام می‌دهد، تطابق برچسب با نسخهٔ `package.json` را می‌سنجد، نصب‌کنندهٔ NSIS را می‌سازد و با متن همان نسخه از `CHANGELOG.md` در GitHub Release منتشر می‌کند. گردش‌کار `ci.yml` روی هر push و pull request آزمون‌ها و ساخت را بررسی می‌کند. (در فایل‌ها `OWNER/REPO` را با مخزن خود جایگزین کنید.)
+به‌جای ساخت دستی، پس از `npm run release:patch` کافی است `git push --follow-tags` بزنید. گردش‌کار `.github/workflows/release.yml` با برچسب `vX.Y.Z` اجرا می‌شود، آزمون‌ها و بررسی نوع را انجام می‌دهد، تطابق برچسب با نسخهٔ `package.json` را می‌سنجد، نصب‌کنندهٔ NSIS را می‌سازد و با متن همان نسخه از `CHANGELOG.md` در GitHub Release منتشر می‌کند. گردش‌کار `ci.yml` روی هر push و pull request آزمون‌ها و ساخت را بررسی می‌کند. 
 
 نصب نسخهٔ جدید روی نسخهٔ قبلی، داده‌های کاربر را حفظ می‌کند. مایگریشن‌های پایگاه داده (`src-tauri/src/lib.rs`) نسخه‌دار و **فقط افزایشی** هستند: هر تغییر در ساختار جدول‌ها باید یک مایگریشن جدید با شمارهٔ بعدی باشد و مایگریشن‌های قبلی هرگز ویرایش نشوند.
 
@@ -56,6 +56,14 @@ npm run tauri build    # ساخت نصب‌کننده NSIS
 - تاریخ‌ها در پایگاه داده به‌صورت میلادی ISO ذخیره و فقط هنگام نمایش به شمسی تبدیل می‌شوند؛ مبالغ به‌صورت عدد صحیح تومان.
 - فایل CSV مبالغ را به‌صورت عدد لاتین (برای جمع‌زدن در اکسل) و تاریخ‌ها را شمسی فارسی ذخیره می‌کند.
 - «داده نمایشی» فقط در حالت توسعه (`npm run dev` / `tauri dev`) در تنظیمات و داشبورد خالی دیده می‌شود.
+
+### به‌روزرسانی خودکار و کلیدها
+
+برنامه از `https://github.com/Ali-Fani/ghest-yar/releases/latest/download/latest.json` نسخهٔ جدید را بررسی می‌کند (فقط انتشارهای غیر پیش‌انتشار). بسته‌ها با کلید خصوصی Tauri امضا و با کلید عمومی داخل `tauri.conf.json` (`plugins.updater.pubkey`) راستی‌آزمایی می‌شوند.
+
+- کلید خصوصی و گذرواژه‌اش هرگز در مخزن قرار نمی‌گیرد؛ در GitHub Secrets با نام‌های `TAURI_SIGNING_PRIVATE_KEY` و `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` ذخیره شده‌اند.
+- ساخت محلی نصب‌کننده هم به همین دو متغیر محیطی نیاز دارد (چون `createUpdaterArtifacts` روشن است).
+- **تعویض کلید:** `npm run tauri signer generate -- -w ~/.tauri/ghestyar.key` را اجرا کنید، کلید عمومی جدید را در `plugins.updater.pubkey` بگذارید و secretها را به‌روز کنید. توجه: نسخه‌های نصب‌شده با کلید قدیمی، به‌روزرسانی امضاشده با کلید جدید را نمی‌پذیرند؛ برای عبور از تعویض کلید، یک نسخهٔ واسط با کلید قدیمی که کلید عمومی جدید را در خود دارد منتشر کنید، یا کاربران را به نصب دستی هدایت کنید.
 
 ---
 
@@ -85,6 +93,13 @@ npm run tauri build  # NSIS installer -> src-tauri/target/release/bundle/nsis/
 
 ### Automated release (GitHub Actions)
 
-After `npm run release:patch`, run `git push --follow-tags`. The `release.yml` workflow runs on the `vX.Y.Z` tag: tests + type check, a guard that the tag equals the `package.json` version, builds the NSIS installer and publishes a GitHub Release using that version's section of `CHANGELOG.md`. `ci.yml` runs tests and build checks on every push and pull request. Replace `OWNER/REPO` in the badges with your repository.
+After `npm run release:patch`, run `git push --follow-tags`. The `release.yml` workflow runs on the `vX.Y.Z` tag: tests + type check, a guard that the tag equals the `package.json` version, builds the NSIS installer and publishes a GitHub Release using that version's section of `CHANGELOG.md`. `ci.yml` runs tests and build checks on every push and pull request.
 
 Database schema changes must always be **new** `tauri-plugin-sql` migrations with the next `version` number (see `src-tauri/src/lib.rs`), never edits to existing ones, so upgrades keep user data.
+
+### Auto-update and keys
+
+The app checks `https://github.com/Ali-Fani/ghest-yar/releases/latest/download/latest.json` (non-prereleases only): silently ~5 s after launch and every 6 h, with a Persian update card (release notes, progress, relaunch), a "Check for updates" button in Settings → About, and an auto-check toggle. Bundles are signed with the Tauri updater key and verified against `plugins.updater.pubkey` in `tauri.conf.json`.
+
+- The private key and its password never live in the repo; they are GitHub secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`. Local `npm run tauri build` needs the same two env vars (`createUpdaterArtifacts` is on).
+- **Rotating keys:** run `npm run tauri signer generate -- -w ~/.tauri/ghestyar.key`, put the new public key in `plugins.updater.pubkey`, update the secrets. Installed apps only trust the old key, so ship one bridge release signed with the OLD key that embeds the NEW pubkey (or ask users to reinstall manually).

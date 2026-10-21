@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { TitleBar } from "./TitleBar";
 import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
+import { UpdateCard } from "./UpdateCard";
 import { PlanWizard } from "../../pages/PlanWizard";
 import { Celebration } from "../ui/Confetti";
 import { useUI } from "../../store/useUI";
@@ -62,6 +63,7 @@ export function Shell() {
           </AnimatePresence>
         </main>
       </div>
+      <UpdateCard />
       <PlanWizard />
       <CommandPalette />
       <Celebration show={celebrating} onDone={() => celebrate(false)} />

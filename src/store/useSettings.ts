@@ -8,10 +8,11 @@ export interface Settings {
   reminderDays: number;
   notifications: boolean;
   launchCheck: boolean;
+  autoUpdate: boolean;
   sidebarCollapsed: boolean;
 }
 
-const DEFAULTS: Settings = { theme: "system", reminderDays: 3, notifications: true, launchCheck: true, sidebarCollapsed: false };
+const DEFAULTS: Settings = { theme: "system", reminderDays: 3, notifications: true, launchCheck: true, autoUpdate: true, sidebarCollapsed: false };
 
 interface State extends Settings {
   raw: Record<string, string>;
@@ -30,6 +31,7 @@ function parse(raw: Record<string, string>): Settings {
     reminderDays: num("reminderDays", DEFAULTS.reminderDays),
     notifications: bool("notifications", DEFAULTS.notifications),
     launchCheck: bool("launchCheck", DEFAULTS.launchCheck),
+    autoUpdate: bool("autoUpdate", DEFAULTS.autoUpdate),
     sidebarCollapsed: bool("sidebarCollapsed", DEFAULTS.sidebarCollapsed),
   };
 }

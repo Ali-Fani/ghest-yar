@@ -51,18 +51,23 @@ jobs:
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # --- Future code signing / updater (disabled on purpose) ---
-          # Updater signing key from `npm run tauri signer generate`:
-          # TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
-          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # Windows Authenticode certificate (also needs bundle.windows.certificateThumbprint
-          # or a signCommand in tauri.conf.json):
+          # Updater signing key (generated with `npm run tauri signer generate`).
+          # Required: createUpdaterArtifacts is on, so the build signs the installer.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # --- Future Windows code signing (Authenticode, disabled on purpose) ---
           # WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
           # WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+          # (also needs bundle.windows.certificateThumbprint or signCommand in tauri.conf.json)
         with:
           tagName: ${{ github.ref_name }}
           releaseName: "قسط‌یار v__VERSION__"
           releaseBody: ${{ steps.notes.outputs.body }}
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
+          # Uploads the NSIS setup .exe, its .sig, and latest.json (the updater manifest;
+          # its notes are the releaseBody above). Prereleases (tags with '-') are flagged
+          # prerelease, so GitHub's /releases/latest never serves them to the updater.
+          includeUpdaterJson: true
+          updaterJsonPreferNsis: true
           args: --bundles nsis
