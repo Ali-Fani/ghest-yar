@@ -1,0 +1,35 @@
+[package]
+name = "ghest-yar"
+version = "1.0.0"
+description = "قسط‌یار - مدیریت اقساط"
+authors = ["Ghest-Yar"]
+license = ""
+repository = ""
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "ghest_yar_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2" }
+
+[dependencies]
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+tauri = { version = "2" }
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
+tauri-plugin-notification = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-single-instance = "2"
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

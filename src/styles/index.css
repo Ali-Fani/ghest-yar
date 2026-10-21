@@ -1,0 +1,183 @@
+@import "tailwindcss";
+@import "@fontsource-variable/vazirmatn";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #f1f3f5;
+  --glass: rgba(255, 255, 255, 0.72);
+  --line: #e4e7ec;
+  --fg: #18181b;
+  --muted: #71717a;
+  --accent: #10b981;
+  --accent-strong: #059669;
+  --accent-soft: #d1fae5;
+  --accent-ink: #047857;
+  --danger: #f43f5e;
+  --danger-soft: #ffe4e6;
+  --danger-ink: #be123c;
+  --warn: #f59e0b;
+  --warn-soft: #fef3c7;
+  --warn-ink: #b45309;
+  --info: #0ea5e9;
+  --info-soft: #e0f2fe;
+  --info-ink: #0369a1;
+  --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 4px 16px -4px rgba(16, 24, 40, 0.06);
+  --shadow-lg: 0 12px 40px -8px rgba(16, 24, 40, 0.18);
+}
+
+.dark {
+  --bg: #0b0c0e;
+  --surface: #141518;
+  --surface-2: #1b1d21;
+  --glass: rgba(20, 21, 24, 0.72);
+  --line: #26282d;
+  --fg: #f4f4f5;
+  --muted: #9a9aa3;
+  --accent: #34d399;
+  --accent-strong: #10b981;
+  --accent-soft: rgba(16, 185, 129, 0.15);
+  --accent-ink: #6ee7b7;
+  --danger: #fb7185;
+  --danger-soft: rgba(244, 63, 94, 0.15);
+  --danger-ink: #fda4af;
+  --warn: #fbbf24;
+  --warn-soft: rgba(245, 158, 11, 0.15);
+  --warn-ink: #fcd34d;
+  --info: #38bdf8;
+  --info-soft: rgba(14, 165, 233, 0.15);
+  --info-ink: #7dd3fc;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 4px 16px -4px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 40px -8px rgba(0, 0, 0, 0.6);
+}
+
+@theme inline {
+  --font-sans: "Vazirmatn Variable", "Vazirmatn", system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-glass: var(--glass);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-ink: var(--accent-ink);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-ink: var(--danger-ink);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-ink: var(--warn-ink);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-ink: var(--info-ink);
+  --shadow-soft: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  line-height: 1.7;
+  overflow: hidden;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+input,
+textarea,
+[contenteditable],
+.selectable {
+  user-select: text;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted) 40%, transparent) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted) 35%, transparent);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted) 60%, transparent);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.glass {
+  background: var(--glass);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+}
+
+.app-backdrop {
+  background:
+    radial-gradient(900px 500px at 85% -10%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 60%),
+    radial-gradient(700px 400px at 0% 110%, color-mix(in srgb, var(--info) 8%, transparent), transparent 60%),
+    var(--bg);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, color-mix(in srgb, var(--line) 80%, transparent) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+  border-radius: 12px;
+}
+
+@keyframes confetti-fall {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.6); opacity: 0; }
+}
+
+/* Radix popper content animations */
+[data-state="open"].pop-anim {
+  animation: pop-in 0.16s ease-out;
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+[cmdk-root] { width: 100%; }
+[cmdk-item][data-selected="true"] { background: var(--accent-soft); color: var(--accent-ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
