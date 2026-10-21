@@ -43,7 +43,7 @@ function Row({ title, desc, children }: { title: string; desc?: string; children
 
 export function SettingsPage() {
   const s = useSettings();
-  const { plans, exportData, importData, clearAll } = usePlans();
+  const { plans, providers, charges, exportData, importData, clearAll } = usePlans();
   const upd = useUpdater();
   const [appVersion, setAppVersion] = useState(BUILD_VERSION);
   useEffect(() => {
@@ -103,6 +103,9 @@ export function SettingsPage() {
         <Row title="بررسی یادآوری هنگام اجرا" desc="با باز شدن برنامه و سپس هر ساعت بررسی می‌شود">
           <Switch checked={s.launchCheck} onCheckedChange={(v) => void s.set("launchCheck", v)} />
         </Row>
+        <Row title="یادآوری بسته شدن صورتحساب" desc="یک روز قبل از بسته شدن دورهٔ صورتحساب هر ارائه‌دهنده اعلان می‌دهد (پیش‌فرض: خاموش)">
+          <Switch checked={s.closeHeadsUp} onCheckedChange={(v) => void s.set("closeHeadsUp", v)} />
+        </Row>
         <Row title="بازه یادآوری" desc="چند روز قبل از سررسید یادآوری شود (پیش‌فرض ۳ روز)">
           <div className="w-32">
             <NumInput
@@ -120,7 +123,7 @@ export function SettingsPage() {
       </Section>
 
       <Section icon={<Database size={17} />} title="داده‌ها و پشتیبان‌گیری">
-        <Row title="خروجی پشتیبان (JSON)" desc={`${toFaDigits(plans.length)} قسط در فایل ذخیره می‌شود`}>
+        <Row title="خروجی پشتیبان (JSON)" desc={`${toFaDigits(plans.length)} قسط، ${toFaDigits(providers.length)} ارائه‌دهنده و ${toFaDigits(charges.length)} خرید صورتحساب در فایل ذخیره می‌شود`}>
           <Button variant="secondary" onClick={() => void doExport()}>
             <Download size={16} /> خروجی گرفتن
           </Button>
@@ -136,7 +139,7 @@ export function SettingsPage() {
           </Button>
         </Row>
         {import.meta.env.DEV && (
-          <Row title="داده نمایشی (فقط توسعه)" desc="چند قسط نمونه برای آزمایش رابط اضافه می‌کند">
+          <Row title="داده نمایشی (فقط توسعه)" desc="چند قسط، ارائه‌دهنده و صورتحساب نمونه برای آزمایش رابط اضافه می‌کند">
             <Button variant="soft" onClick={() => void seedDemo().then(() => toast.success("داده نمایشی اضافه شد"))}>
               <Sparkles size={16} /> افزودن
             </Button>
@@ -202,7 +205,7 @@ export function SettingsPage() {
         open={!!importing}
         onOpenChange={(o) => !o && setImporting(null)}
         title="بازیابی از پشتیبان؟"
-        description={importing ? `${toFaDigits(importing.plans.length)} قسط و ${toFaDigits(importing.installments.length)} ردیف پرداخت وارد می‌شود و اطلاعات فعلی شما جایگزین خواهد شد.` : ""}
+        description={importing ? `${toFaDigits(importing.plans.length)} قسط، ${toFaDigits(importing.installments.length)} ردیف پرداخت، ${toFaDigits(importing.providers.length)} ارائه‌دهنده و ${toFaDigits(importing.charges.length)} خرید صورتحساب وارد می‌شود و اطلاعات فعلی شما جایگزین خواهد شد.` : ""}
         confirmLabel="بازیابی"
         onConfirm={async () => {
           if (!importing) return;

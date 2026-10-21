@@ -40,7 +40,7 @@ export function DueRow({
         <div className="mt-0.5 flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-xs text-muted">
           {statement ? (
             <Badge tone={item.open ? "info" : "warn"} className="shrink-0 px-2 py-0 text-[11px]">
-              {item.open ? "صورتحساب جاری" : "صورتحساب"}
+              صورتحساب
             </Badge>
           ) : (
             <span className="shrink-0 num">قسط {toFaDigits(item.seq ?? 0)}</span>

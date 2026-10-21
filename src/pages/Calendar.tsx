@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Receipt } from "lucide-react";
 import { useDerived } from "../lib/useDerived";
 import type { DueItem } from "../lib/dueItems";
 import { WEEK_HEADERS, formatJalaliLong, formatMonthYear, monthGrid, shiftMonth, toJalali, todayISO } from "../lib/jalali";
@@ -13,7 +13,7 @@ import { PageHeader } from "../components/ui/Misc";
 import { cn } from "../lib/utils";
 
 export function CalendarPage() {
-  const { today, dueItems } = useDerived();
+  const { today, dueItems, statementViews, providerById } = useDerived();
   const tj = toJalali(today);
   const [view, setView] = useState({ y: tj.y, m: tj.m });
   const [selected, setSelected] = useState<string>(today);
@@ -28,6 +28,20 @@ export function CalendarPage() {
     }
     return m;
   }, [dueItems]);
+
+  // Close dates of running cycles: a subtle marker on the day a statement closes.
+  const closings = useMemo(() => {
+    const m = new Map<string, { name: string; color: string }[]>();
+    for (const v of statementViews) {
+      if (v.state !== "open") continue;
+      const p = providerById.get(v.providerId);
+      if (!p || p.archived) continue;
+      const arr = m.get(v.end) ?? [];
+      arr.push({ name: p.name, color: p.color });
+      m.set(v.end, arr);
+    }
+    return m;
+  }, [statementViews, providerById]);
 
   const cells = monthGrid(view.y, view.m);
   const go = (d: number) => {
@@ -86,6 +100,7 @@ export function CalendarPage() {
             >
               {cells.map((c, idx) => {
                 const items = byDate.get(c.iso) ?? [];
+                const closes = closings.get(c.iso) ?? [];
                 const friday = idx % 7 === 6;
                 const isToday = c.iso === today;
                 const isSel = c.iso === selected;
@@ -114,17 +129,34 @@ export function CalendarPage() {
                       {items.slice(0, 2).map((i) => {
                         const paid = i.paid;
                         const overdue = !paid && !i.open && i.dueDate < today;
+                        const stmt = i.kind === "statement";
                         return (
                           <span
                             key={i.key}
-                            className={cn("truncate rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-4", paid && "line-through opacity-60", overdue && "ring-1 ring-danger")}
-                            style={{ background: `color-mix(in srgb, ${i.color} 18%, transparent)`, color: i.color }}
+                            className={cn(
+                              "flex min-w-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium leading-4",
+                              stmt && "border border-dashed",
+                              paid && "line-through opacity-60",
+                              overdue && "ring-1 ring-danger",
+                            )}
+                            style={{
+                              background: `color-mix(in srgb, ${i.color} ${stmt ? 10 : 18}%, transparent)`,
+                              color: i.color,
+                              borderColor: stmt ? `color-mix(in srgb, ${i.color} 55%, transparent)` : undefined,
+                            }}
                           >
-                            {i.title}
+                            {stmt && <Receipt size={11} className="shrink-0" />}
+                            <span className="truncate">{i.title}</span>
                           </span>
                         );
                       })}
                       {items.length > 2 && <span className="px-1 text-[11px] text-muted num">+{toFaDigits(items.length - 2)} مورد دیگر</span>}
+                      {closes.slice(0, items.length > 1 ? 0 : 1).map((cl) => (
+                        <span key={cl.name} className="flex min-w-0 items-center gap-1 px-1 text-[10.5px] text-muted" title={`بسته شدن صورتحساب ${cl.name}`}>
+                          <span className="size-1.5 shrink-0 rounded-full" style={{ background: cl.color }} />
+                          <span className="truncate">بسته شدن {cl.name}</span>
+                        </span>
+                      ))}
                     </div>
                   </button>
                 );

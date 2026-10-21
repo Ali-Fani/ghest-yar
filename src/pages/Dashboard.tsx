@@ -7,15 +7,17 @@ import { YTick } from "../components/ChartBits";
 import { usePlans } from "../store/usePlans";
 import { useUI } from "../store/useUI";
 import { useDerived } from "../lib/useDerived";
-import { JALALI_MONTHS, diffDays, formatJalaliLong, monthKey, shiftMonth, todayISO, toJalali } from "../lib/jalali";
+import { JALALI_MONTHS, WEEK_HEADERS, addDaysISO, diffDays, formatDayMonth, formatJalaliLong, monthKey, relativeLabel, shiftMonth, toJalali, weekdayIndexSatFirst } from "../lib/jalali";
+import { summarizeProvider } from "../lib/creditUsage";
+import type { DueItem } from "../lib/dueItems";
 import { formatToman, formatTomanCompact } from "../lib/money";
 import { toFaDigits } from "../lib/digits";
-import { isDueOverdue, isPayable } from "../lib/dueItems";
+import { groupByProviderDay, isDueOverdue, isPayable } from "../lib/dueItems";
 import { dueHref, quickPayDue } from "../lib/actions";
 import { Card, SectionTitle } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { EmptyState, PageHeader } from "../components/ui/Misc";
-import { DueRow } from "../components/DueRow";
+import { DueGroupRow, DueRow } from "../components/DueRow";
 import { PlanIcon } from "../components/ui/PlanIcon";
 import { seedDemo } from "../lib/seed";
 import { cn } from "../lib/utils";
@@ -26,7 +28,7 @@ export function Dashboard() {
   const plans = usePlans((s) => s.plans);
   const providers = usePlans((s) => s.providers);
   const openWizard = useUI((s) => s.openWizard);
-  const { today, dueItems } = useDerived();
+  const { today, dueItems, providerById } = useDerived();
 
   const d = useMemo(() => {
     const pay = dueItems.filter((i) => i.direction === "payable");
@@ -99,6 +101,15 @@ export function Dashboard() {
     );
   }
 
+  const upcomingGroups = groupByProviderDay(d.upcoming);
+  const overdueGroups = groupByProviderDay(d.overdue);
+  const providerRows = [...providerById.values()]
+    .filter((p) => !p.archived)
+    .map((p) => ({ p, s: summarizeProvider(p, dueItems, today) }))
+    .filter((x) => x.s.outstanding > 0)
+    .sort((a, b) => (a.s.next?.dueDate ?? "9999").localeCompare(b.s.next?.dueDate ?? "9999"));
+  const weekItems = dueItems.filter((i) => i.direction === "payable" && !i.paid);
+
   const n = d.nextUnpaid;
   const nDays = n ? diffDays(n.dueDate, today) : 0;
   const nOver = n ? n.dueDate < today : false;
@@ -138,6 +149,9 @@ export function Dashboard() {
         />
         {d.hasRec && <Kpi i={3} icon={<HandCoins size={20} />} tone="sky" label="طلب باقی‌مانده" value={formatToman(d.recRemaining)} sub={`${formatTomanCompact(d.recRemaining)} تومان`} />}
       </div>
+
+      {/* This week */}
+      <WeekStrip items={weekItems} today={today} />
 
       {/* Hero + chart */}
       <div className="mb-5 grid grid-cols-[minmax(320px,380px)_1fr] gap-5">
@@ -230,15 +244,15 @@ export function Dashboard() {
       </div>
 
       {/* Lists */}
-      <div className="grid grid-cols-2 gap-5 min-[1700px]:grid-cols-3">
+      <div className="grid grid-cols-2 gap-5">
         <Card className="p-5">
           <SectionTitle>۳۰ روز آینده</SectionTitle>
           {d.upcoming.length === 0 ? (
             <Placeholder text="سررسیدی در ۳۰ روز آینده نیست" />
           ) : (
             <div className="-mx-2 flex max-h-[340px] flex-col overflow-y-auto">
-              {d.upcoming.map((i) => (
-                <DueRow key={i.key} item={i} today={today} />
+              {upcomingGroups.map((g) => (
+                <DueGroupRow key={g.key} group={g} today={today} providerName={providerById.get(g.providerId ?? -1)?.name ?? ""} />
               ))}
             </div>
           )}
@@ -253,13 +267,51 @@ export function Dashboard() {
             <Placeholder text="هیچ قسط معوقی ندارید. آفرین!" good />
           ) : (
             <div className="-mx-2 flex max-h-[340px] flex-col overflow-y-auto">
-              {d.overdue.map((i) => (
-                <DueRow key={i.key} item={i} today={today} />
+              {overdueGroups.map((g) => (
+                <DueGroupRow key={g.key} group={g} today={today} providerName={providerById.get(g.providerId ?? -1)?.name ?? ""} />
               ))}
             </div>
           )}
         </Card>
-        <Card className="col-span-2 p-5 min-[1700px]:col-span-1">
+        <Card className="p-5">
+          <SectionTitle
+            action={
+              <Link to="/providers" className="text-xs text-muted transition-colors hover:text-fg">
+                همه
+              </Link>
+            }
+          >
+            بر اساس ارائه‌دهنده
+          </SectionTitle>
+          {providerRows.length === 0 ? (
+            <Placeholder text="مانده‌ای نزد ارائه‌دهندگان ندارید" good />
+          ) : (
+            <div className="-mx-2 flex max-h-[340px] flex-col overflow-y-auto">
+              {providerRows.map(({ p, s }) => (
+                <Link key={p.id} to={`/providers/${p.id}`} className="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface-2/70">
+                  <PlanIcon icon={p.icon} color={p.color} size={38} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[14px] font-semibold">{p.name}</div>
+                    <div className="mt-0.5 flex items-center gap-1.5 overflow-hidden whitespace-nowrap text-xs text-muted">
+                      {s.next ? (
+                        <>
+                          <span className={cn("shrink-0", !s.next.open && s.next.dueDate < today && "font-medium text-danger-ink")}>{relativeLabel(s.next.dueDate, today)}</span>
+                          <span className="shrink-0">·</span>
+                          <span className="truncate">{s.next.kind === "statement" ? "صورتحساب" : `قسط ${toFaDigits(s.next.seq ?? 0)}`} · {formatTomanCompact(s.next.remaining)}</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="shrink-0 whitespace-nowrap text-end">
+                    <div className="text-[14px] font-bold num">{formatTomanCompact(s.outstanding)} تومان</div>
+                    {s.usage.limit ? <div className={cn("mt-0.5 text-[11.5px] num", s.usage.tone === "ok" ? "text-muted" : s.usage.tone === "warn" ? "text-warn-ink" : "text-danger-ink")}>{toFaDigits(Math.round(s.usage.percent))}٪ از سقف</div> : null}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </Card>
+        <Card className="p-5">
           <SectionTitle>باقی‌مانده بر اساس دسته</SectionTitle>
           {d.cats.length === 0 ? (
             <Placeholder text="بدهی باقی‌مانده‌ای وجود ندارد" good />
@@ -339,6 +391,63 @@ function Kpi({ icon, label, value, sub, tone, i, progress }: { icon: React.React
             <motion.div className="h-full rounded-full bg-info" initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.9, ease: "easeOut" }} />
           </div>
         )}
+      </Card>
+    </motion.div>
+  );
+}
+
+/** «این هفته»: the next 7 days as columns, due items grouped per day (same-day installments of one provider merge). */
+function WeekStrip({ items, today }: { items: DueItem[]; today: string }) {
+  const days = Array.from({ length: 7 }, (_, k) => addDaysISO(today, k));
+  const byDay = days.map((iso) => groupByProviderDay(items.filter((i) => i.dueDate === iso)));
+  const dayTotal = (iso: string) => items.filter((i) => i.dueDate === iso && !i.open).reduce((s, i) => s + i.remaining, 0);
+  return (
+    <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.08 }} className="mb-5">
+      <Card className="p-5">
+        <SectionTitle>
+          <span className="flex items-center gap-2">
+            <CalendarClock size={16} className="text-muted" /> این هفته
+          </span>
+        </SectionTitle>
+        <div className="grid grid-cols-7 gap-2">
+          {days.map((iso, k) => {
+            const groups = byDay[k];
+            const total = dayTotal(iso);
+            const label = k === 0 ? "امروز" : k === 1 ? "فردا" : WEEK_HEADERS[weekdayIndexSatFirst(iso)];
+            const friday = weekdayIndexSatFirst(iso) === 6;
+            return (
+              <div key={iso} className={cn("flex min-w-0 flex-col rounded-xl border border-line p-2.5", k === 0 ? "bg-accent-soft/40" : "bg-surface-2/30", friday && k !== 0 && "bg-danger-soft/20")}>
+                <div className="flex items-baseline justify-between gap-1 whitespace-nowrap">
+                  <span className={cn("truncate text-[13px] font-bold", k === 0 && "text-accent-ink")}>{label}</span>
+                  <span className="shrink-0 text-[11.5px] text-muted num">{formatDayMonth(iso)}</span>
+                </div>
+                <div className="mt-2 flex min-h-[66px] flex-1 flex-col gap-1">
+                  {groups.length === 0 && <span className="my-auto text-center text-xs text-muted/60">—</span>}
+                  {groups.slice(0, 3).map((g) => {
+                    const first = g.items[0];
+                    const many = g.items.length > 1;
+                    const overdue = g.items.some((i) => isDueOverdue(i, today));
+                    return (
+                      <Link
+                        key={g.key}
+                        to={many ? `/providers/${g.providerId}` : dueHref(first)}
+                        title={many ? `${g.items.length} قسط ${first.providerName ?? ""}` : first.title}
+                        className={cn("flex min-w-0 items-center gap-1.5 rounded-lg px-1.5 py-1 text-[11.5px] font-medium transition-opacity hover:opacity-80", overdue && "ring-1 ring-danger")}
+                        style={{ background: `color-mix(in srgb, ${first.color} 16%, transparent)`, color: first.color }}
+                      >
+                        <span className="min-w-0 flex-1 truncate">{many ? `${toFaDigits(g.items.length)} قسط ${first.providerName ?? ""}` : first.title}</span>
+                      </Link>
+                    );
+                  })}
+                  {groups.length > 3 && <span className="px-1 text-[11px] text-muted num">+{toFaDigits(groups.length - 3)} مورد دیگر</span>}
+                </div>
+                <div className={cn("mt-2 truncate whitespace-nowrap border-t border-line pt-1.5 text-[12px] font-bold num", total === 0 && "text-muted/50")}>
+                  {total > 0 ? `${formatTomanCompact(total)} تومان` : "—"}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </Card>
     </motion.div>
   );

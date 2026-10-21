@@ -39,8 +39,28 @@ export function Reports() {
         left: items.reduce((s, i) => s + i.remaining, 0),
       };
     });
+    const group = (keyOf: (i: DueItem) => { key: string; color: string }) => {
+      const m = new Map<string, { name: string; color: string; count: number; due: number; paid: number; left: number }>();
+      for (const i of rows) {
+        const k = keyOf(i);
+        const g = m.get(k.key) ?? { name: k.key, color: k.color, count: 0, due: 0, paid: 0, left: 0 };
+        g.count += 1;
+        g.due += i.amount;
+        g.paid += Math.min(i.paidAmount, i.amount);
+        g.left += i.remaining;
+        m.set(k.key, g);
+      }
+      return [...m.values()].sort((a, b) => b.due - a.due);
+    };
+    const byProvider = group((i) => ({ key: i.providerName ?? "بدون ارائه‌دهنده", color: i.providerName ? i.color : "var(--muted)" }));
+    const byType = group((i) => ({
+      key: i.kind === "statement" ? "صورتحساب" : i.planKind ? PLAN_KIND_LABEL[i.planKind] : "وام",
+      color: i.kind === "statement" ? "var(--warn)" : i.planKind === "loan" ? "var(--accent)" : i.planKind === "personal" ? "var(--info)" : "#a855f7",
+    }));
     return {
       rows,
+      byProvider,
+      byType,
       months,
       due: months.reduce((s, m) => s + m.due, 0),
       paid: months.reduce((s, m) => s + m.paid, 0),
@@ -135,6 +155,11 @@ export function Reports() {
             </div>
           </Card>
 
+          <div className="mb-5 grid grid-cols-2 gap-5">
+            <BreakdownCard title="بر اساس ارائه‌دهنده" rows={data.byProvider} />
+            <BreakdownCard title="بر اساس نوع" rows={data.byType} />
+          </div>
+
           <Card className="overflow-hidden">
             <table className="w-full text-[13.5px]">
               <thead className="bg-surface-2/60 text-xs text-muted">
@@ -185,6 +210,41 @@ function Summary({ label, value, sub, tone, progress }: { label: string; value: 
           <motion.div className="h-full rounded-full bg-accent" initial={{ width: 0 }} animate={{ width: `${progress}%` }} transition={{ duration: 0.9 }} />
         </div>
       )}
+    </Card>
+  );
+}
+
+type BreakdownRow = { name: string; color: string; count: number; due: number; paid: number; left: number };
+
+function BreakdownCard({ title, rows }: { title: string; rows: BreakdownRow[] }) {
+  const max = Math.max(1, ...rows.map((r) => r.due));
+  return (
+    <Card className="p-5">
+      <SectionTitle>{title}</SectionTitle>
+      <div className="flex flex-col gap-3.5">
+        {rows.map((r) => (
+          <div key={r.name}>
+            <div className="mb-1.5 flex items-center justify-between gap-3 whitespace-nowrap text-[13px]">
+              <span className="flex min-w-0 items-center gap-2">
+                <span className="size-2.5 shrink-0 rounded-full" style={{ background: r.color }} />
+                <span className="truncate font-medium">{r.name}</span>
+                <span className="shrink-0 text-xs text-muted num">{toFaDigits(r.count)} مورد</span>
+              </span>
+              <span className="shrink-0 font-bold num">{formatTomanCompact(r.due)} تومان</span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-surface-2">
+              <div className="flex h-full" style={{ width: `${(r.due / max) * 100}%` }}>
+                <div className="h-full bg-accent" style={{ width: `${r.due ? (r.paid / r.due) * 100 : 0}%` }} />
+                <div className="h-full flex-1 bg-warn" />
+              </div>
+            </div>
+            <div className="mt-1 flex justify-between whitespace-nowrap text-[11.5px] text-muted num">
+              <span>پرداخت‌شده {formatTomanCompact(r.paid)}</span>
+              <span>باقی‌مانده {formatTomanCompact(r.left)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
     </Card>
   );
 }
