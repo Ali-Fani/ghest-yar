@@ -24,6 +24,7 @@ const DONUT_COLORS = ["#10b981", "#0ea5e9", "#f59e0b", "#a855f7", "#f43f5e", "#1
 
 export function Dashboard() {
   const plans = usePlans((s) => s.plans);
+  const providers = usePlans((s) => s.providers);
   const openWizard = useUI((s) => s.openWizard);
   const { today, dueItems } = useDerived();
 
@@ -75,7 +76,7 @@ export function Dashboard() {
     };
   }, [dueItems, today]);
 
-  if (plans.length === 0) {
+  if (plans.length === 0 && providers.length === 0) {
     return (
       <div>
         <PageHeader title="داشبورد" subtitle="خلاصه وضعیت اقساط شما" />

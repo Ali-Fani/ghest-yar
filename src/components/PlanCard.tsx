@@ -5,13 +5,14 @@ import type { PlanStats } from "../lib/derive";
 import { formatJalaliMedium, relativeLabel, todayISO } from "../lib/jalali";
 import { formatToman } from "../lib/money";
 import { toFaDigits } from "../lib/digits";
-import { DIRECTION_LABEL } from "../lib/constants";
+import { DIRECTION_LABEL, PLAN_KIND_LABEL } from "../lib/constants";
+import type { Provider } from "../lib/types";
 import { Badge } from "./ui/Badge";
 import { PlanIcon } from "./ui/PlanIcon";
 import { ProgressRing } from "./ui/ProgressRing";
 import { cn } from "../lib/utils";
 
-export function PlanCard({ s, index = 0, list }: { s: PlanStats; index?: number; list?: boolean }) {
+export function PlanCard({ s, index = 0, list, provider }: { s: PlanStats; index?: number; list?: boolean; provider?: Provider | null }) {
   const p = s.plan;
   const receivable = p.direction === "receivable";
   return (
@@ -33,14 +34,21 @@ export function PlanCard({ s, index = 0, list }: { s: PlanStats; index?: number;
           <PlanIcon icon={p.icon} color={p.color} />
           <div className="min-w-0 flex-1">
             <div className="truncate text-[15px] font-bold">{p.title}</div>
-            <div className="truncate text-[13px] text-muted">{p.counterparty || "—"}</div>
+            <div className="truncate text-[13px] text-muted">{p.store || p.counterparty || "—"}</div>
           </div>
           {!list && <ProgressRing percent={s.percent} color={s.finished ? "var(--accent)" : p.color} />}
         </div>
 
         <div className={cn("mt-3 flex flex-wrap gap-1.5", list && "mt-0 flex-1")}>
           <Badge tone={receivable ? "info" : "neutral"}>{DIRECTION_LABEL[p.direction]}</Badge>
-          {p.category && <Badge>{p.category}</Badge>}
+          {p.kind !== "loan" && <Badge tone="info">{PLAN_KIND_LABEL[p.kind]}</Badge>}
+          {provider && (
+            <Badge className="max-w-[150px]" style={{ background: `color-mix(in srgb, ${provider.color} 15%, transparent)`, color: provider.color }}>
+              <span className="size-1.5 shrink-0 rounded-full bg-current" />
+              <span className="truncate">{provider.name}</span>
+            </Badge>
+          )}
+          {p.category && !provider && <Badge>{p.category}</Badge>}
           {s.finished && (
             <Badge tone="accent">
               <CheckCircle2 size={12} /> تسویه شده

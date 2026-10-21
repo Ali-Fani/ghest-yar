@@ -6,7 +6,7 @@ import { useUI } from "../store/useUI";
 import { computePlanStats } from "../lib/derive";
 import { todayISO } from "../lib/jalali";
 import { toFaDigits } from "../lib/digits";
-import { CATEGORIES } from "../lib/constants";
+import { CATEGORIES, PLAN_KIND_LABEL } from "../lib/constants";
 import { PlanCard } from "../components/PlanCard";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
@@ -16,16 +16,19 @@ import { EmptyState, PageHeader, Segmented } from "../components/ui/Misc";
 type StatusFilter = "active" | "finished" | "archived";
 
 export function Plans() {
-  const { plans, installments } = usePlans();
+  const { plans, installments, providers } = usePlans();
   const openWizard = useUI((s) => s.openWizard);
   const [q, setQ] = useState("");
   const [dir, setDir] = useState("all");
   const [cat, setCat] = useState("all");
+  const [kind, setKind] = useState("all");
+  const [prov, setProv] = useState("all");
   const [status, setStatus] = useState<StatusFilter>("active");
   const [sort, setSort] = useState("due");
   const [view, setView] = useState<"grid" | "list">("grid");
 
   const today = todayISO();
+  const providerById = useMemo(() => new Map(providers.map((p) => [p.id, p])), [providers]);
   const stats = useMemo(() => plans.map((p) => computePlanStats(p, installments, today)), [plans, installments, today]);
 
   const filtered = useMemo(() => {
@@ -37,7 +40,10 @@ export function Plans() {
       if (status === "finished" && !s.finished) return false;
       if (dir !== "all" && p.direction !== dir) return false;
       if (cat !== "all" && p.category !== cat) return false;
-      if (needle && !`${p.title} ${p.counterparty ?? ""} ${p.category ?? ""}`.toLowerCase().includes(needle)) return false;
+      if (kind !== "all" && p.kind !== kind) return false;
+      if (prov !== "all" && String(p.provider_id ?? "none") !== prov) return false;
+      const pname = p.provider_id != null ? providerById.get(p.provider_id)?.name ?? "" : "";
+      if (needle && !`${p.title} ${p.counterparty ?? ""} ${p.category ?? ""} ${p.store ?? ""} ${pname}`.toLowerCase().includes(needle)) return false;
       return true;
     });
     r = [...r].sort((a, b) => {
@@ -49,7 +55,7 @@ export function Plans() {
       }
     });
     return r;
-  }, [stats, q, dir, cat, status, sort]);
+  }, [stats, q, dir, cat, kind, prov, status, sort, providerById]);
 
   const counts = {
     active: stats.filter((s) => !s.plan.archived && !s.finished).length,
@@ -83,7 +89,7 @@ export function Plans() {
           <div className="mb-5 flex flex-wrap items-center gap-3">
             <div className="relative w-72">
               <Search size={16} className="pointer-events-none absolute inset-y-0 start-3 my-auto text-muted" />
-              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="جستجو در عنوان، طرف حساب…" className="ps-9" />
+              <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="جستجو در عنوان، فروشگاه، ارائه‌دهنده…" className="ps-9" />
             </div>
             <Select
               className="w-40"
@@ -95,6 +101,20 @@ export function Plans() {
                 { value: "receivable", label: "طلب من" },
               ]}
             />
+            <Select
+              className="w-40"
+              value={kind}
+              onValueChange={setKind}
+              options={[{ value: "all", label: "همه نوع‌ها" }, ...(Object.keys(PLAN_KIND_LABEL) as (keyof typeof PLAN_KIND_LABEL)[]).map((k) => ({ value: k, label: PLAN_KIND_LABEL[k] }))]}
+            />
+            {providers.length > 0 && (
+              <Select
+                className="w-44"
+                value={prov}
+                onValueChange={setProv}
+                options={[{ value: "all", label: "همه ارائه‌دهندگان" }, { value: "none", label: "بدون ارائه‌دهنده" }, ...providers.map((p) => ({ value: String(p.id), label: p.name }))]}
+              />
+            )}
             <Select className="w-40" value={cat} onValueChange={setCat} options={[{ value: "all", label: "همه دسته‌ها" }, ...CATEGORIES.map((c) => ({ value: c, label: c }))]} />
             <Select
               className="w-48"
@@ -141,7 +161,7 @@ export function Plans() {
               className={view === "grid" ? "grid grid-cols-[repeat(auto-fill,minmax(310px,1fr))] gap-4" : "flex flex-col gap-3"}
             >
               {filtered.map((s, i) => (
-                <PlanCard key={s.plan.id} s={s} index={i} list={view === "list"} />
+                <PlanCard key={s.plan.id} s={s} index={i} list={view === "list"} provider={s.plan.provider_id != null ? providerById.get(s.plan.provider_id) : null} />
               ))}
             </motion.div>
           )}

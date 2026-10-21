@@ -13,42 +13,47 @@ import { remaining } from "../lib/status";
 import type { Installment } from "../lib/types";
 import { toFaDigits } from "../lib/digits";
 
-/** Register a full or partial payment with a Jalali payment date. */
-export function PayDialog({ inst, onClose }: { inst: Installment | null; onClose: () => void }) {
-  const setPayment = usePlans((s) => s.setPayment);
-  const celebrate = useUI((s) => s.celebrate);
+/** Generic "register a payment" dialog: amount (default: all that remains) and a Jalali payment date. */
+export function PayAmountDialog({
+  open,
+  title = "ثبت پرداخت",
+  description,
+  remaining: rem,
+  onSubmit,
+  onClose,
+}: {
+  open: boolean;
+  title?: string;
+  description?: string;
+  remaining: number;
+  onSubmit: (amount: number, date: string) => void | Promise<void>;
+  onClose: () => void;
+}) {
   const [amount, setAmount] = useState(0);
   const [date, setDate] = useState(todayISO());
 
   useEffect(() => {
-    if (inst) {
-      setAmount(remaining(inst));
+    if (open) {
+      setAmount(rem);
       setDate(todayISO());
     }
-  }, [inst]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
-  const rem = inst ? remaining(inst) : 0;
   const valid = amount > 0;
-
-  const submit = async () => {
-    if (!inst || !valid) return;
-    const newPaid = Math.min(inst.amount, inst.paid_amount + amount);
-    const { planFinished } = await setPayment(inst.id, newPaid, date);
-    toast.success(newPaid >= inst.amount ? "قسط پرداخت شد" : "پرداخت جزئی ثبت شد");
-    if (planFinished) celebrate(true);
-    onClose();
-  };
+  const chip =
+    "cursor-pointer rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-xs text-muted hover:border-accent hover:text-accent-ink";
 
   return (
-    <Modal open={!!inst} onOpenChange={(o) => !o && onClose()} title="ثبت پرداخت" description={inst ? `قسط شماره ${toFaDigits(inst.seq)} — مانده: ${formatToman(rem)}` : undefined}>
+    <Modal open={open} onOpenChange={(o) => !o && onClose()} title={title} description={description}>
       <div className="flex flex-col gap-5 px-6 py-5">
         <Field label="مبلغ پرداختی">
           <MoneyInput value={amount} onChange={setAmount} chips={false} autoFocus />
           <div className="mt-1 flex gap-2">
-            <button type="button" className="cursor-pointer rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-xs text-muted hover:border-accent hover:text-accent-ink" onClick={() => setAmount(rem)}>
+            <button type="button" className={chip} onClick={() => setAmount(rem)}>
               تمام مانده
             </button>
-            <button type="button" className="cursor-pointer rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-xs text-muted hover:border-accent hover:text-accent-ink" onClick={() => setAmount(Math.floor(rem / 2 / 1000) * 1000)}>
+            <button type="button" className={chip} onClick={() => setAmount(Math.floor(rem / 2 / 1000) * 1000)}>
               نصف مانده
             </button>
           </div>
@@ -58,10 +63,32 @@ export function PayDialog({ inst, onClose }: { inst: Installment | null; onClose
         </Field>
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="secondary" onClick={onClose}>انصراف</Button>
-          <Button variant="primary" disabled={!valid} onClick={() => void submit()}>ثبت پرداخت</Button>
+          <Button variant="primary" disabled={!valid} onClick={() => void onSubmit(amount, date)}>ثبت پرداخت</Button>
         </div>
       </div>
     </Modal>
+  );
+}
+
+/** Register a full or partial payment of an installment. */
+export function PayDialog({ inst, onClose }: { inst: Installment | null; onClose: () => void }) {
+  const setPayment = usePlans((s) => s.setPayment);
+  const celebrate = useUI((s) => s.celebrate);
+  return (
+    <PayAmountDialog
+      open={!!inst}
+      remaining={inst ? remaining(inst) : 0}
+      description={inst ? `قسط شماره ${toFaDigits(inst.seq)} — مانده: ${formatToman(remaining(inst))}` : undefined}
+      onClose={onClose}
+      onSubmit={async (amount, date) => {
+        if (!inst) return;
+        const newPaid = Math.min(inst.amount, inst.paid_amount + amount);
+        const { planFinished } = await setPayment(inst.id, newPaid, date);
+        toast.success(newPaid >= inst.amount ? "قسط پرداخت شد" : "پرداخت جزئی ثبت شد");
+        if (planFinished) celebrate(true);
+        onClose();
+      }}
+    />
   );
 }
 

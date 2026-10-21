@@ -46,3 +46,23 @@ export function formatUsage(used: number, limit: number): string {
   if (ui > 0 && li > 0 && u.slice(ui) === l.slice(li)) return `${u.slice(0, ui)} از ${l}`;
   return `${u} از ${l}`;
 }
+
+export interface ProviderSummary {
+  /** Everything still owed: unpaid installments + statements (open cycle included). */
+  outstanding: number;
+  /** Earliest unpaid due item (an open statement counts, with its due date). */
+  next: DueItem | null;
+  overdueCount: number;
+  usage: CreditUsage;
+}
+
+export function summarizeProvider(provider: Pick<Provider, "id" | "credit_limit">, all: DueItem[], today: string): ProviderSummary {
+  const mine = all.filter((d) => d.providerId === provider.id);
+  const unpaid = mine.filter((d) => !d.paid);
+  return {
+    outstanding: unpaid.reduce((s, d) => s + d.remaining, 0),
+    next: unpaid[0] ?? null,
+    overdueCount: unpaid.filter((d) => !d.open && d.dueDate < today).length,
+    usage: creditUsage(provider.credit_limit, mine),
+  };
+}

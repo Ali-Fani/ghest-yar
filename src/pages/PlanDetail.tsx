@@ -13,7 +13,8 @@ import { formatToman } from "../lib/money";
 import { toFaDigits } from "../lib/digits";
 import { statusOf, isPaid, remaining } from "../lib/status";
 import { quickPay } from "../lib/actions";
-import { DIRECTION_LABEL } from "../lib/constants";
+import { DIRECTION_LABEL, PLAN_KIND_LABEL } from "../lib/constants";
+import { feeAmount } from "../lib/schedule";
 import type { Installment } from "../lib/types";
 import { Badge, StatusBadge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
@@ -30,7 +31,7 @@ const menuItem =
 export function PlanDetail() {
   const { id } = useParams();
   const nav = useNavigate();
-  const { plans, installments, setArchived, deletePlan, undoPayment, setPayment } = usePlans();
+  const { plans, installments, providers, setArchived, deletePlan, undoPayment, setPayment } = usePlans();
   const reminderDays = useSettings((s) => s.reminderDays);
   const openWizard = useUI((s) => s.openWizard);
   const celebrate = useUI((s) => s.celebrate);
@@ -40,6 +41,7 @@ export function PlanDetail() {
   const [delOpen, setDelOpen] = useState(false);
 
   const plan = plans.find((p) => p.id === Number(id));
+  const provider = plan?.provider_id != null ? providers.find((p) => p.id === plan.provider_id) : undefined;
   const today = todayISO();
   const s = useMemo(() => (plan ? computePlanStats(plan, installments, today) : null), [plan, installments, today]);
 
@@ -75,6 +77,7 @@ export function PlanDetail() {
 
   const totalPayable = s.installmentsSum + plan.down_payment;
   const receivable = plan.direction === "receivable";
+  const fee = feeAmount(plan.total_amount - plan.down_payment, plan.fee_type, plan.fee_value);
 
   return (
     <div>
@@ -91,12 +94,21 @@ export function PlanDetail() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-[22px] font-extrabold tracking-tight">{plan.title}</h1>
               <Badge tone={receivable ? "info" : "neutral"}>{DIRECTION_LABEL[plan.direction]}</Badge>
+              {plan.kind !== "loan" && <Badge tone="info">{PLAN_KIND_LABEL[plan.kind]}</Badge>}
+              {provider && (
+                <Link to={`/providers/${provider.id}`} className="max-w-[200px]">
+                  <Badge className="max-w-full transition-opacity hover:opacity-80" style={{ background: `color-mix(in srgb, ${provider.color} 15%, transparent)`, color: provider.color }}>
+                    <span className="size-1.5 shrink-0 rounded-full bg-current" />
+                    <span className="truncate">{provider.name}</span>
+                  </Badge>
+                </Link>
+              )}
               {plan.category && <Badge>{plan.category}</Badge>}
               {plan.archived ? <Badge>بایگانی</Badge> : null}
               {s.finished && <Badge tone="accent"><Check size={12} /> تسویه شده</Badge>}
             </div>
             <div className="mt-1 text-[13.5px] text-muted">
-              {plan.counterparty || "—"} · {plan.interval_value > 1 ? `هر ${toFaDigits(plan.interval_value)} ` : "هر "}
+              {plan.store ? `${plan.store} · ` : ""}{plan.counterparty || "—"} · {plan.interval_value > 1 ? `هر ${toFaDigits(plan.interval_value)} ` : "هر "}
               {plan.interval_type === "monthly" ? "ماه" : plan.interval_type === "weekly" ? "هفته" : "روز"}
               {plan.profit_rate > 0 && <> · سود {toFaDigits(plan.profit_rate)}٪ سالانه</>}
             </div>
@@ -139,7 +151,7 @@ export function PlanDetail() {
         </div>
 
         <div className="mt-6 grid grid-cols-4 gap-4">
-          <Mini label="مجموع قابل پرداخت" value={formatToman(totalPayable)} sub={plan.down_payment ? `شامل پیش‌پرداخت ${formatToman(plan.down_payment)}` : undefined} />
+          <Mini label="مجموع قابل پرداخت" value={formatToman(totalPayable)} sub={[plan.down_payment ? `شامل پیش‌پرداخت ${formatToman(plan.down_payment)}` : "", fee > 0 ? `کارمزد ${formatToman(fee)}` : ""].filter(Boolean).join(" · ") || undefined} />
           <Mini label="پرداخت‌شده" value={formatToman(s.paidSum)} tone="accent" />
           <Mini label="باقی‌مانده" value={formatToman(s.remainingSum)} tone={s.overdueCount ? "danger" : undefined} sub={s.overdueCount ? `${toFaDigits(s.overdueCount)} قسط معوق` : undefined} />
           <Mini

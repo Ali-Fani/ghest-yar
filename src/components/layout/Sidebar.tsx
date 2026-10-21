@@ -1,6 +1,6 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "motion/react";
-import { CalendarDays, ChevronsLeft, ChevronsRight, LayoutDashboard, ListChecks, Monitor, Moon, Plus, Settings, Sun, BarChart3 } from "lucide-react";
+import { CalendarDays, ChevronsLeft, ChevronsRight, CreditCard, LayoutDashboard, ListChecks, Monitor, Moon, Plus, Settings, ShoppingBag, Sun, BarChart3 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "../../lib/utils";
 import { toFaDigits } from "../../lib/digits";
@@ -16,6 +16,7 @@ import { BUILD_VERSION, faVersion, getAppVersion } from "../../lib/version";
 const NAV = [
   { to: "/", label: "داشبورد", icon: LayoutDashboard, end: true },
   { to: "/plans", label: "اقساط من", icon: ListChecks, badge: true },
+  { to: "/providers", label: "ارائه‌دهندگان", icon: CreditCard },
   { to: "/calendar", label: "تقویم", icon: CalendarDays },
   { to: "/reports", label: "گزارش‌ها", icon: BarChart3 },
   { to: "/settings", label: "تنظیمات", icon: Settings },
@@ -29,6 +30,7 @@ export function Sidebar() {
   const theme = useSettings((s) => s.theme);
   const setSetting = useSettings((s) => s.set);
   const openWizard = useUI((s) => s.openWizard);
+  const openQuickAdd = useUI((s) => s.openQuickAdd);
   const { today, dueItems } = useDerived();
   const loc = useLocation();
   const [version, setVersion] = useState(BUILD_VERSION);
@@ -61,12 +63,22 @@ export function Sidebar() {
           type="button"
           onClick={() => openWizard()}
           className={cn(
-            "mb-5 flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-strong font-semibold text-white shadow-[0_8px_20px_-8px] shadow-accent-strong transition-all hover:brightness-110 active:scale-[0.97]",
+            "mb-2 flex h-11 cursor-pointer items-center justify-center gap-2 rounded-xl bg-accent-strong font-semibold text-white shadow-[0_8px_20px_-8px] shadow-accent-strong transition-all hover:brightness-110 active:scale-[0.97]",
             collapsed ? "w-full" : "w-full",
           )}
         >
           <Plus size={19} strokeWidth={2.6} />
           {!collapsed && <span>قسط جدید</span>}
+        </button>
+      </Tip>
+      <Tip label="خرید جدید (Ctrl+Shift+N)">
+        <button
+          type="button"
+          onClick={() => openQuickAdd()}
+          className="mb-5 flex h-10 w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-line bg-surface text-[13.5px] font-medium text-fg shadow-soft transition-all hover:bg-surface-2 active:scale-[0.97]"
+        >
+          <ShoppingBag size={17} />
+          {!collapsed && <span>خرید جدید</span>}
         </button>
       </Tip>
 

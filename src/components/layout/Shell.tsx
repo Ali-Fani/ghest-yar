@@ -7,6 +7,8 @@ import { Sidebar } from "./Sidebar";
 import { CommandPalette } from "./CommandPalette";
 import { UpdateCard } from "./UpdateCard";
 import { PlanWizard } from "../../pages/PlanWizard";
+import { QuickAdd } from "../QuickAdd";
+import { ProviderDialog } from "../ProviderDialog";
 import { Celebration } from "../ui/Confetti";
 import { useUI } from "../../store/useUI";
 import { useSettings } from "../../store/useSettings";
@@ -14,6 +16,7 @@ import { useSettings } from "../../store/useSettings";
 export function Shell() {
   const loc = useLocation();
   const openWizard = useUI((s) => s.openWizard);
+  const openQuickAdd = useUI((s) => s.openQuickAdd);
   const setPalette = useUI((s) => s.setPalette);
   const celebrating = useUI((s) => s.celebrating);
   const celebrate = useUI((s) => s.celebrate);
@@ -23,7 +26,10 @@ export function Shell() {
     const onKey = (e: KeyboardEvent) => {
       if (!(e.ctrlKey || e.metaKey)) return;
       const k = e.key.toLowerCase();
-      if (k === "n") {
+      if (k === "n" && e.shiftKey) {
+        e.preventDefault();
+        openQuickAdd();
+      } else if (k === "n") {
         e.preventDefault();
         openWizard();
       } else if (k === "k") {
@@ -33,7 +39,7 @@ export function Shell() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [openWizard, setPalette]);
+  }, [openWizard, openQuickAdd, setPalette]);
 
   useEffect(() => {
     if (theme !== "system") return;
@@ -65,6 +71,8 @@ export function Shell() {
       </div>
       <UpdateCard />
       <PlanWizard />
+      <QuickAdd />
+      <ProviderDialog />
       <CommandPalette />
       <Celebration show={celebrating} onDone={() => celebrate(false)} />
       <Toaster position="bottom-left" dir="rtl" theme={theme === "system" ? "system" : theme} toastOptions={{ className: "font-sans" }} />

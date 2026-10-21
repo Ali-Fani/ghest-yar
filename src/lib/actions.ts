@@ -25,15 +25,18 @@ export function statementViewById(id: number): StatementView | undefined {
 }
 
 /** Pay the whole remaining statement amount in one click (with undo). */
-export async function quickPayStatement(id: number, label = "صورتحساب پرداخت شد") {
-  const v = statementViewById(id);
-  if (!v) return;
+export async function payStatementView(v: StatementView, label = "صورتحساب پرداخت شد") {
   const prev = { paid_amount: v.paidAmount, paid_date: v.paidDate };
   await usePlans.getState().setStatementPayment(v, v.amount, todayISO());
   toast.success(label, {
     duration: 6000,
     action: { label: "بازگردانی", onClick: () => void usePlans.getState().setStatementPayment(v, prev.paid_amount, prev.paid_date) },
   });
+}
+
+export async function quickPayStatement(id: number, label?: string) {
+  const v = statementViewById(id);
+  if (v) await payStatementView(v, label);
 }
 
 /** "Paid" button of a DueItem row, whichever kind it is. */

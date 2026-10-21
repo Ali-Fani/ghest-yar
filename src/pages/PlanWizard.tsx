@@ -13,16 +13,26 @@ import { Select } from "../components/ui/Select";
 import { Segmented, Switch } from "../components/ui/Misc";
 import { JalaliDatePicker } from "../components/ui/JalaliDatePicker";
 import { ICON_MAP, PlanIcon } from "../components/ui/PlanIcon";
-import { CATEGORIES, DIRECTION_LABEL, INTERVAL_LABEL, PLAN_COLORS, PLAN_ICONS } from "../lib/constants";
-import { generateSchedule, type IntervalType } from "../lib/schedule";
+import { FeeFields } from "../components/FeeFields";
+import { CATEGORIES, DIRECTION_LABEL, INTERVAL_LABEL, PLAN_COLORS, PLAN_ICONS, PLAN_KIND_LABEL } from "../lib/constants";
+import { generateSchedule, splitKind, type IntervalType } from "../lib/schedule";
 import { formatJalaliLong, formatJalaliShort, jalaliToISO, relativeLabel, toJalali, todayISO, addJalaliMonthsISO } from "../lib/jalali";
 import { formatToman } from "../lib/money";
 import { parseDecimalInput, parseIntInput, toFaDigits } from "../lib/digits";
-import type { Direction, NewPlan } from "../lib/types";
+import { presetOf } from "../lib/purchase";
+import type { Direction, FeeType, NewInstallment, NewPlan, PlanKind, Provider } from "../lib/types";
 import { cn } from "../lib/utils";
 
 interface Form {
   title: string;
+  kind: PlanKind;
+  /** "none" or a provider id */
+  providerId: string;
+  store: string;
+  feeType: FeeType;
+  feeValue: string;
+  /** Mark the first installment as paid on creation (Pay-in-4 style). */
+  firstPaid: boolean;
   direction: Direction;
   counterparty: string;
   category: string;
@@ -45,8 +55,10 @@ function defaultStart(): string {
   return addJalaliMonthsISO(jalaliToISO(j.y, j.m, 1), 1);
 }
 
+const PURCHASE_KINDS: PlanKind[] = ["purchase", "pay_in_4", "bnpl"];
+
 const emptyForm = (): Form => ({
-  title: "", direction: "payable", counterparty: "", category: "خرید قسطی", icon: "wallet", color: PLAN_COLORS[0],
+  title: "", kind: "loan", providerId: "none", store: "", feeType: "none", feeValue: "0", firstPaid: false, direction: "payable", counterparty: "", category: "خرید قسطی", icon: "wallet", color: PLAN_COLORS[0],
   total: 0, down: 0, rate: "0", count: "12", intervalType: "monthly", intervalValue: "1", start: defaultStart(),
   overrideOn: false, overrideAmount: 0, notes: "",
 });
@@ -57,7 +69,7 @@ export function PlanWizard() {
   const open = useUI((s) => s.wizardOpen);
   const editId = useUI((s) => s.wizardEditId);
   const close = useUI((s) => s.closeWizard);
-  const { plans, installments, createPlan, savePlan } = usePlans();
+  const { plans, installments, providers, createPlan, savePlan } = usePlans();
   const nav = useNavigate();
 
   const [step, setStep] = useState(0);
@@ -77,6 +89,8 @@ export function PlanWizard() {
     setTouched(false);
     if (editing) {
       setF({
+        kind: editing.kind, providerId: editing.provider_id != null ? String(editing.provider_id) : "none", store: editing.store ?? "",
+        feeType: editing.fee_type, feeValue: String(editing.fee_value), firstPaid: false,
         title: editing.title, direction: editing.direction, counterparty: editing.counterparty ?? "", category: editing.category ?? "",
         icon: editing.icon, color: editing.color, total: editing.total_amount, down: editing.down_payment,
         rate: String(editing.profit_rate), count: String(editing.installment_count), intervalType: editing.interval_type,
@@ -88,18 +102,51 @@ export function PlanWizard() {
   }, [open, editId]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
+  const activeProviders = useMemo(() => providers.filter((p) => !p.archived || String(p.id) === f.providerId), [providers, f.providerId]);
+  const provider: Provider | undefined = providers.find((p) => String(p.id) === f.providerId);
+  const isPurchase = PURCHASE_KINDS.includes(f.kind);
+
+  /** Choosing a provider applies its preset (parts, interval, fee, first-at-purchase) to step 2. */
+  const pickProvider = (v: string) => {
+    const p = providers.find((x) => String(x.id) === v);
+    if (!p || editing) {
+      set("providerId", v);
+      return;
+    }
+    const pre = presetOf(p);
+    const today = todayISO();
+    setF((x) => ({
+      ...x,
+      providerId: v,
+      direction: "payable",
+      kind: splitKind(pre.parts, pre.firstAtPurchase),
+      category: "خرید قسطی",
+      color: p.color,
+      icon: p.icon,
+      counterparty: x.counterparty || p.name,
+      count: String(pre.parts),
+      intervalType: pre.intervalType,
+      intervalValue: String(pre.intervalValue),
+      feeType: pre.feeType,
+      feeValue: String(pre.feeValue),
+      firstPaid: pre.firstAtPurchase,
+      start: pre.firstAtPurchase ? today : x.start,
+    }));
+  };
 
   const count = parseIntInput(f.count);
   const intervalValue = Math.max(1, parseIntInput(f.intervalValue));
   const rate = Number.isNaN(parseDecimalInput(f.rate)) ? 0 : parseDecimalInput(f.rate);
+  const feeValue = f.feeType === "none" ? 0 : Number.isNaN(parseDecimalInput(f.feeValue)) ? 0 : parseDecimalInput(f.feeValue);
 
   const schedule = useMemo(() => {
     if (f.total <= 0 || count < 1 || count > 600) return null;
     return generateSchedule({
       totalAmount: f.total, downPayment: Math.min(f.down, f.total), profitRate: rate, count, intervalType: f.intervalType,
       intervalValue, startDate: f.start, overrideAmount: f.overrideOn && f.overrideAmount > 0 ? f.overrideAmount : null,
+      feeType: f.feeType, feeValue,
     });
-  }, [f.total, f.down, rate, count, f.intervalType, intervalValue, f.start, f.overrideOn, f.overrideAmount]);
+  }, [f.total, f.down, rate, count, f.intervalType, intervalValue, f.start, f.overrideOn, f.overrideAmount, f.feeType, feeValue]);
 
   // Keep the auto amount mirrored into the override field whenever the override is off.
   useEffect(() => {
@@ -131,9 +178,15 @@ export function PlanWizard() {
     installment_amount: schedule!.installmentAmount, start_date: f.start, interval_type: f.intervalType,
     interval_value: intervalValue, color: f.color, icon: f.icon, notes: f.notes.trim() || null,
     archived: editing?.archived ?? 0,
-    kind: editing?.kind ?? "loan", provider_id: editing?.provider_id ?? null, store: editing?.store ?? null,
-    purchase_date: editing?.purchase_date ?? null, fee_type: editing?.fee_type ?? "none", fee_value: editing?.fee_value ?? 0,
+    kind: f.kind, provider_id: provider?.id ?? null, store: isPurchase ? f.store.trim() || null : null,
+    purchase_date: editing?.purchase_date ?? (isPurchase ? todayISO() : null), fee_type: f.feeType, fee_value: feeValue,
   });
+
+  /** On creation the first installment can be pre-paid (Pay-in-4: part 1 is paid at purchase). */
+  const itemsToCreate = (): NewInstallment[] =>
+    schedule!.items.map((it, idx) =>
+      idx === 0 && f.firstPaid ? { ...it, paid_amount: it.amount, paid_date: it.due_date < todayISO() ? it.due_date : todayISO() } : it,
+    );
 
   const doSave = async () => {
     if (!schedule) return;
@@ -144,7 +197,7 @@ export function PlanWizard() {
         await savePlan(editing.id, planPayload(), schedule.items.filter((i) => !keptSeqs.has(i.seq)));
         toast.success("قسط ویرایش شد");
       } else {
-        const id = await createPlan(planPayload(), schedule.items);
+        const id = await createPlan(planPayload(), itemsToCreate());
         toast.success("قسط جدید ایجاد شد");
         nav(`/plans/${id}`);
       }
@@ -210,8 +263,38 @@ export function PlanWizard() {
                     <Field label="عنوان" error={err("title")}>
                       <Input autoFocus value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="مثلاً: وام خرید خودرو" />
                     </Field>
+                    <Field label="نوع قسط">
+                      <Segmented
+                        className="w-full"
+                        value={f.kind}
+                        onChange={(v) => set("kind", v)}
+                        options={(Object.keys(PLAN_KIND_LABEL) as PlanKind[]).map((k) => ({ value: k, label: PLAN_KIND_LABEL[k] }))}
+                      />
+                    </Field>
+                    {providers.length > 0 ? (
+                      <div className={cn("grid gap-4", isPurchase ? "grid-cols-2" : "grid-cols-1")}>
+                        <Field label="ارائه‌دهنده (اختیاری)" hint={provider && !editing ? "تنظیمات پیش‌فرض ارائه‌دهنده در مرحلهٔ بعد اعمال شد" : undefined}>
+                          <Select
+                            value={f.providerId}
+                            onValueChange={pickProvider}
+                            options={[{ value: "none", label: "بدون ارائه‌دهنده" }, ...activeProviders.map((p) => ({ value: String(p.id), label: p.name }))]}
+                          />
+                        </Field>
+                        {isPurchase && (
+                          <Field label="فروشگاه / پذیرنده">
+                            <Input value={f.store} onChange={(e) => set("store", e.target.value)} placeholder="مثلاً: نام فروشگاه" />
+                          </Field>
+                        )}
+                      </div>
+                    ) : (
+                      isPurchase && (
+                        <Field label="فروشگاه / پذیرنده">
+                          <Input value={f.store} onChange={(e) => set("store", e.target.value)} placeholder="مثلاً: نام فروشگاه" />
+                        </Field>
+                      )
+                    )}
                     <div className="grid grid-cols-2 gap-4">
-                      <Field label="نوع">
+                      <Field label="جهت">
                         <Segmented
                           className="w-full"
                           value={f.direction}
@@ -320,6 +403,18 @@ export function PlanWizard() {
                         <NumInput value={f.intervalValue} onChange={(v) => set("intervalValue", v)} suffix={f.intervalType === "monthly" ? "ماه" : f.intervalType === "weekly" ? "هفته" : "روز"} />
                       </Field>
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <FeeFields type={f.feeType} value={f.feeValue} onType={(t) => set("feeType", t)} onValue={(v) => set("feeValue", v)} percentOf="مبلغ تأمین‌شده" />
+                    </div>
+                    {!editing && (
+                      <div className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface-2/50 p-4">
+                        <div>
+                          <div className="text-[14px] font-semibold">قسط اول هنگام خرید پرداخت شده است</div>
+                          <div className="text-xs text-muted">قسط اول پرداخت‌شده ثبت می‌شود</div>
+                        </div>
+                        <Switch checked={f.firstPaid} onCheckedChange={(v) => set("firstPaid", v)} />
+                      </div>
+                    )}
                     <div className="rounded-2xl border border-line bg-surface-2/50 p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div>
@@ -394,7 +489,7 @@ export function PlanWizard() {
               <PlanIcon icon={f.icon} color={f.color} />
               <div className="min-w-0">
                 <div className="truncate text-[14px] font-bold">{f.title || "عنوان قسط"}</div>
-                <div className="truncate text-xs text-muted">{f.counterparty || DIRECTION_LABEL[f.direction]}</div>
+                <div className="truncate text-xs text-muted">{provider?.name || f.counterparty || DIRECTION_LABEL[f.direction]}</div>
               </div>
             </div>
             {schedule ? (
@@ -407,6 +502,7 @@ export function PlanWizard() {
                 <div className="my-1 h-px bg-line" />
                 <Row k="مجموع پرداختی" v={formatToman(schedule.totalPayable)} strong />
                 <Row k="سود / کارمزد" v={formatToman(schedule.totalProfit)} />
+                {schedule.fee > 0 && <Row k="کارمزد" v={formatToman(schedule.fee)} />}
               </div>
             ) : (
               <p className="text-[13px] leading-7 text-muted">با وارد کردن مبلغ و تعداد اقساط، محاسبات اینجا نمایش داده می‌شود.</p>

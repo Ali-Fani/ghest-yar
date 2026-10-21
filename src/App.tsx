@@ -4,6 +4,8 @@ import { Shell } from "./components/layout/Shell";
 import { Dashboard } from "./pages/Dashboard";
 import { Plans } from "./pages/Plans";
 import { PlanDetail } from "./pages/PlanDetail";
+import { Providers } from "./pages/Providers";
+import { ProviderDetail } from "./pages/ProviderDetail";
 import { CalendarPage } from "./pages/Calendar";
 import { Reports } from "./pages/Reports";
 import { SettingsPage } from "./pages/Settings";
@@ -49,6 +51,8 @@ export function App() {
           <Route index element={<Dashboard />} />
           <Route path="plans" element={<Plans />} />
           <Route path="plans/:id" element={<PlanDetail />} />
+          <Route path="providers" element={<Providers />} />
+          <Route path="providers/:id" element={<ProviderDetail />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<SettingsPage />} />

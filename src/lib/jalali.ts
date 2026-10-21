@@ -103,6 +103,12 @@ export function formatJalaliMedium(iso: string): string {
   return `${toFaDigits(d)} ${JALALI_MONTHS[m - 1]} ${toFaDigits(y)}`;
 }
 
+/** ۲۵ آبان */
+export function formatDayMonth(iso: string): string {
+  const { m, d } = toJalali(iso);
+  return `${toFaDigits(d)} ${JALALI_MONTHS[m - 1]}`;
+}
+
 export function formatMonthYear(y: number, m: number): string {
   return `${JALALI_MONTHS[m - 1]} ${toFaDigits(y)}`;
 }

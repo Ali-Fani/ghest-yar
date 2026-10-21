@@ -1,7 +1,11 @@
 import { Command } from "cmdk";
 import { Dialog } from "radix-ui";
 import { useNavigate } from "react-router-dom";
-import { BarChart3, CalendarDays, LayoutDashboard, ListChecks, Moon, Plus, Search, Settings, Sun } from "lucide-react";
+import { BarChart3, CalendarDays, CreditCard, LayoutDashboard, ListChecks, Moon, Plus, Receipt, Search, Settings, ShoppingBag, Sun } from "lucide-react";
+import { useDerived } from "../../lib/useDerived";
+import { dueHref } from "../../lib/actions";
+import { formatJalaliShort } from "../../lib/jalali";
+import { formatTomanCompact } from "../../lib/money";
 import { useUI } from "../../store/useUI";
 import { usePlans } from "../../store/usePlans";
 import { useSettings } from "../../store/useSettings";
@@ -15,7 +19,11 @@ export function CommandPalette() {
   const open = useUI((s) => s.paletteOpen);
   const setOpen = useUI((s) => s.setPalette);
   const openWizard = useUI((s) => s.openWizard);
+  const openQuickAdd = useUI((s) => s.openQuickAdd);
   const plans = usePlans((s) => s.plans);
+  const providers = usePlans((s) => s.providers);
+  const { dueItems } = useDerived();
+  const upcoming = dueItems.filter((d) => !d.paid && d.direction === "payable").slice(0, 25);
   const theme = useSettings((s) => s.theme);
   const setSetting = useSettings((s) => s.set);
   const nav = useNavigate();
@@ -58,6 +66,9 @@ export function CommandPalette() {
                       <Command.Item className={itemCls} onSelect={() => { setOpen(false); openWizard(); }}>
                         <Plus size={17} /> قسط جدید <span className="ms-auto text-xs text-muted" dir="ltr">Ctrl N</span>
                       </Command.Item>
+                      <Command.Item className={itemCls} onSelect={() => { setOpen(false); openQuickAdd(); }}>
+                        <ShoppingBag size={17} /> خرید جدید <span className="ms-auto text-xs text-muted" dir="ltr">Ctrl Shift N</span>
+                      </Command.Item>
                       <Command.Item className={itemCls} onSelect={() => void setSetting("theme", theme === "dark" ? "light" : "dark")}>
                         {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />} تغییر تم
                       </Command.Item>
@@ -65,10 +76,37 @@ export function CommandPalette() {
                     <Command.Group heading="صفحه‌ها" className="text-xs text-muted [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5">
                       <Command.Item className={itemCls} onSelect={() => go("/")}><LayoutDashboard size={17} /> داشبورد</Command.Item>
                       <Command.Item className={itemCls} onSelect={() => go("/plans")}><ListChecks size={17} /> اقساط من</Command.Item>
+                      <Command.Item className={itemCls} onSelect={() => go("/providers")}><CreditCard size={17} /> ارائه‌دهندگان</Command.Item>
                       <Command.Item className={itemCls} onSelect={() => go("/calendar")}><CalendarDays size={17} /> تقویم</Command.Item>
                       <Command.Item className={itemCls} onSelect={() => go("/reports")}><BarChart3 size={17} /> گزارش‌ها</Command.Item>
                       <Command.Item className={itemCls} onSelect={() => go("/settings")}><Settings size={17} /> تنظیمات</Command.Item>
                     </Command.Group>
+                    {providers.length > 0 && (
+                      <Command.Group heading="ارائه‌دهندگان" className="text-xs text-muted [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5">
+                        {providers.map((p) => (
+                          <Command.Item key={p.id} value={`ارائه‌دهنده ${p.name} p${p.id}`} className={itemCls} onSelect={() => go(`/providers/${p.id}`)}>
+                            <PlanIcon icon={p.icon} color={p.color} size={28} />
+                            <span>{p.name}</span>
+                          </Command.Item>
+                        ))}
+                      </Command.Group>
+                    )}
+                    {upcoming.length > 0 && (
+                      <Command.Group heading="سررسیدهای پیش‌رو" className="text-xs text-muted [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5">
+                        {upcoming.map((d) => (
+                          <Command.Item
+                            key={d.key}
+                            value={`سررسید ${d.title} ${d.providerName ?? ""} ${d.kind === "statement" ? "صورتحساب" : "قسط"} ${d.key}`}
+                            className={itemCls}
+                            onSelect={() => go(dueHref(d))}
+                          >
+                            {d.kind === "statement" ? <Receipt size={17} /> : <ListChecks size={17} />}
+                            <span className="truncate">{d.title}</span>
+                            <span className="ms-auto whitespace-nowrap text-xs text-muted num">{formatJalaliShort(d.dueDate)} · {formatTomanCompact(d.remaining)}</span>
+                          </Command.Item>
+                        ))}
+                      </Command.Group>
+                    )}
                     {plans.length > 0 && (
                       <Command.Group heading="اقساط" className="text-xs text-muted [&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5">
                         {plans.map((p) => (
