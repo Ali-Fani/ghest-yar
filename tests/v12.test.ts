@@ -471,3 +471,22 @@ describe("reminders", () => {
     expect(r.body).toBe("صورتحساب دیجی‌پی فردا بسته می‌شود — ۲ میلیون");
   });
 });
+
+/* ------------------------------ split plan builder ------------------------------ */
+
+describe("buildSplitPlan", () => {
+  it("builds a pay_in_4 plan from a provider preset with part 1 pre-paid", async () => {
+    const { buildSplitPlan, presetOf } = await import("../src/lib/purchase");
+    const p = prov({ id: 7, name: "اسنپ‌پی", supports_split: 1, color: "#10b981", icon: "card" });
+    const date = J(1405, 8, 10);
+    const { plan, result } = buildSplitPlan(p, { ...presetOf(p), amount: 2_400_000, date, title: "", store: "کتاب" });
+    expect(plan.kind).toBe("pay_in_4");
+    expect(plan.provider_id).toBe(7);
+    expect(plan.title).toBe("کتاب");
+    expect(plan.counterparty).toBe("اسنپ‌پی");
+    expect(plan.purchase_date).toBe(date);
+    expect(plan.start_date).toBe(date);
+    expect(result.items[0].paid_amount).toBe(600_000);
+    expect(result.items.reduce((s, i) => s + i.amount, 0)).toBe(2_400_000);
+  });
+});
