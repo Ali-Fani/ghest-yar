@@ -14,6 +14,7 @@ English: Fully Persian installer, single-source versioning, and the version show
 - نمایش نسخهٔ برنامه با ارقام فارسی در «تنظیمات ← درباره» و پایین نوار کناری
 - اسکریپت `scripts/sync-version.mjs` و دستورهای `npm run release:patch|minor|major` برای انتشار نسخه
 - فایل `CHANGELOG.md` و مستندات روند انتشار در README
+- گردش‌کارهای GitHub Actions برای بررسی خودکار (`ci.yml`) و ساخت و انتشار نصب‌کننده با برچسب نسخه (`release.yml`)، همراه با `scripts/changelog-section.mjs` برای متن انتشار
 
 ### تغییر‌یافته
 - `package.json` اکنون تنها منبع شمارهٔ نسخه است؛ `tauri.conf.json` از آن می‌خواند و `Cargo.toml` و `Cargo.lock` همگام می‌شوند

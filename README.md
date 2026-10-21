@@ -1,5 +1,8 @@
 # قسط‌یار (Ghest-Yar)
 
+[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![Release](https://github.com/OWNER/REPO/actions/workflows/release.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/release.yml)
+
 برنامه دسکتاپ ویندوز برای مدیریت اقساط، کاملاً فارسی و راست‌به‌چپ، با تقویم شمسی و واحد پول تومان.
 
 ## امکانات
@@ -40,6 +43,10 @@ npm run tauri build    # ساخت نصب‌کننده NSIS
 3. نصب‌کننده را بسازید: `npm run tauri build`
 4. فایل نصب‌کننده: `src-tauri/target/release/bundle/nsis/قسط‌یار_<version>_x64-setup.exe`
 
+### انتشار خودکار با GitHub Actions
+
+به‌جای ساخت دستی، پس از `npm run release:patch` کافی است `git push --follow-tags` بزنید. گردش‌کار `.github/workflows/release.yml` با برچسب `vX.Y.Z` اجرا می‌شود، آزمون‌ها و بررسی نوع را انجام می‌دهد، تطابق برچسب با نسخهٔ `package.json` را می‌سنجد، نصب‌کنندهٔ NSIS را می‌سازد و با متن همان نسخه از `CHANGELOG.md` در GitHub Release منتشر می‌کند. گردش‌کار `ci.yml` روی هر push و pull request آزمون‌ها و ساخت را بررسی می‌کند. (در فایل‌ها `OWNER/REPO` را با مخزن خود جایگزین کنید.)
+
 نصب نسخهٔ جدید روی نسخهٔ قبلی، داده‌های کاربر را حفظ می‌کند. مایگریشن‌های پایگاه داده (`src-tauri/src/lib.rs`) نسخه‌دار و **فقط افزایشی** هستند: هر تغییر در ساختار جدول‌ها باید یک مایگریشن جدید با شمارهٔ بعدی باشد و مایگریشن‌های قبلی هرگز ویرایش نشوند.
 
 پیش‌نیازها: Node 20+، Rust (MSVC)، Visual Studio Build Tools، و WebView2 (در ویندوز ۱۱ نصب است).
@@ -75,5 +82,9 @@ npm run tauri build  # NSIS installer -> src-tauri/target/release/bundle/nsis/
 2. `npm run release:patch` (or `release:minor` / `release:major`): bumps all files, commits, and creates the `vX.Y.Z` tag.
 3. `npm run tauri build`
 4. Installer: `src-tauri/target/release/bundle/nsis/قسط‌یار_<version>_x64-setup.exe`
+
+### Automated release (GitHub Actions)
+
+After `npm run release:patch`, run `git push --follow-tags`. The `release.yml` workflow runs on the `vX.Y.Z` tag: tests + type check, a guard that the tag equals the `package.json` version, builds the NSIS installer and publishes a GitHub Release using that version's section of `CHANGELOG.md`. `ci.yml` runs tests and build checks on every push and pull request. Replace `OWNER/REPO` in the badges with your repository.
 
 Database schema changes must always be **new** `tauri-plugin-sql` migrations with the next `version` number (see `src-tauri/src/lib.rs`), never edits to existing ones, so upgrades keep user data.

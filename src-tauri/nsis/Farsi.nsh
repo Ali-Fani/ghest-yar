@@ -1,4 +1,4 @@
-﻿LangString addOrReinstall ${LANG_FARSI} "افزودن یا نصب مجدد اجزا"
+LangString addOrReinstall ${LANG_FARSI} "افزودن یا نصب مجدد اجزا"
 LangString alreadyInstalled ${LANG_FARSI} "از قبل نصب شده است"
 LangString alreadyInstalledLong ${LANG_FARSI} "${PRODUCTNAME} نسخهٔ ${VERSION} از قبل نصب شده است. عملیات مورد نظر خود را انتخاب کنید و برای ادامه روی «بعدی» بزنید."
 LangString appRunning ${LANG_FARSI} "{{product_name}} در حال اجراست! لطفاً ابتدا آن را ببندید و دوباره تلاش کنید."
