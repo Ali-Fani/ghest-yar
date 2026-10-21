@@ -209,7 +209,7 @@ export function Dashboard() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={d.months} margin={{ top: 8, right: 4, left: 4, bottom: 0 }} barCategoryGap="22%">
                   <CartesianGrid vertical={false} stroke="var(--line)" strokeDasharray="3 4" />
-                  <XAxis dataKey="name" reversed tickLine={false} axisLine={false} interval={0} tick={{ fill: "var(--muted)", fontSize: 10.5, fontFamily: "inherit" }} />
+                  <XAxis dataKey="name" reversed tickLine={false} axisLine={false} interval="preserveStartEnd" minTickGap={8} tick={{ fill: "var(--muted)", fontSize: 10.5, fontFamily: "inherit" }} />
                   <YAxis orientation="right" tickLine={false} axisLine={false} width={84} tick={<YTick />} />
                   <Tooltip
                     cursor={{ fill: "var(--surface-2)", opacity: 0.6 }}
@@ -235,7 +235,7 @@ export function Dashboard() {
       </div>
 
       {/* Lists */}
-      <div className="grid grid-cols-3 gap-5">
+      <div className="grid grid-cols-2 gap-5 min-[1700px]:grid-cols-3">
         <Card className="p-5">
           <SectionTitle>۳۰ روز آینده</SectionTitle>
           {d.upcoming.length === 0 ? (
@@ -264,7 +264,7 @@ export function Dashboard() {
             </div>
           )}
         </Card>
-        <Card className="p-5">
+        <Card className="col-span-2 p-5 min-[1700px]:col-span-1">
           <SectionTitle>باقی‌مانده بر اساس دسته</SectionTitle>
           {d.cats.length === 0 ? (
             <Placeholder text="بدهی باقی‌مانده‌ای وجود ندارد" good />
@@ -285,7 +285,7 @@ export function Dashboard() {
                   <div className="text-[13px] font-extrabold num">{formatTomanCompact(d.catTotal)}</div>
                 </div>
               </div>
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <div className="flex min-w-0 max-w-xs flex-1 flex-col gap-2">
                 {d.cats.slice(0, 6).map((c, i) => (
                   <div key={c.name} className="flex items-center gap-2 text-[12.5px]">
                     <span className="size-2.5 shrink-0 rounded-full" style={{ background: DONUT_COLORS[i % DONUT_COLORS.length] }} />

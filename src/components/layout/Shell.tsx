@@ -56,7 +56,7 @@ export function Shell() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
-              className="mx-auto w-full max-w-[1320px] px-8 py-7"
+              className="mx-auto w-full max-w-[1600px] px-8 py-7"
             >
               <Outlet />
             </motion.div>
