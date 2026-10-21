@@ -31,6 +31,17 @@ npm run tauri build    # ساخت نصب‌کننده NSIS
 
 نصب‌کننده در `src-tauri/target/release/bundle/nsis/` ساخته می‌شود.
 
+## انتشار نسخهٔ جدید
+
+شمارهٔ نسخه فقط در `package.json` نگهداری می‌شود؛ `tauri.conf.json` از آن می‌خواند و `scripts/sync-version.mjs` فایل‌های `Cargo.toml` و `Cargo.lock` را همگام می‌کند.
+
+1. ابتدا `CHANGELOG.md` را به‌روز کنید و تغییرات را کامیت کنید (درخت git باید تمیز باشد).
+2. نسخه را افزایش دهید: `npm run release:patch` (یا `release:minor` / `release:major`). این دستور همهٔ فایل‌ها را به‌روز می‌کند، کامیت می‌سازد و برچسب `vX.Y.Z` را می‌زند.
+3. نصب‌کننده را بسازید: `npm run tauri build`
+4. فایل نصب‌کننده: `src-tauri/target/release/bundle/nsis/قسط‌یار_<version>_x64-setup.exe`
+
+نصب نسخهٔ جدید روی نسخهٔ قبلی، داده‌های کاربر را حفظ می‌کند. مایگریشن‌های پایگاه داده (`src-tauri/src/lib.rs`) نسخه‌دار و **فقط افزایشی** هستند: هر تغییر در ساختار جدول‌ها باید یک مایگریشن جدید با شمارهٔ بعدی باشد و مایگریشن‌های قبلی هرگز ویرایش نشوند.
+
 پیش‌نیازها: Node 20+، Rust (MSVC)، Visual Studio Build Tools، و WebView2 (در ویندوز ۱۱ نصب است).
 
 ## نکات
@@ -55,3 +66,14 @@ npm run build
 cd src-tauri && cargo check
 npm run tauri build  # NSIS installer -> src-tauri/target/release/bundle/nsis/
 ```
+
+### Releasing
+
+`package.json` is the single source of truth for the version (`tauri.conf.json` reads it; `scripts/sync-version.mjs` syncs `Cargo.toml` and `Cargo.lock`).
+
+1. Update `CHANGELOG.md` and commit (working tree must be clean).
+2. `npm run release:patch` (or `release:minor` / `release:major`): bumps all files, commits, and creates the `vX.Y.Z` tag.
+3. `npm run tauri build`
+4. Installer: `src-tauri/target/release/bundle/nsis/قسط‌یار_<version>_x64-setup.exe`
+
+Database schema changes must always be **new** `tauri-plugin-sql` migrations with the next `version` number (see `src-tauri/src/lib.rs`), never edits to existing ones, so upgrades keep user data.

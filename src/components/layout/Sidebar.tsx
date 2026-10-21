@@ -1,7 +1,7 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { motion } from "motion/react";
 import { CalendarDays, ChevronsLeft, ChevronsRight, LayoutDashboard, ListChecks, Monitor, Moon, Plus, Settings, Sun, BarChart3 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "../../lib/utils";
 import { toFaDigits } from "../../lib/digits";
 import { todayISO } from "../../lib/jalali";
@@ -11,6 +11,7 @@ import { useSettings, type Theme } from "../../store/useSettings";
 import { useUI } from "../../store/useUI";
 import { Tip } from "../ui/Misc";
 import { Logo } from "./Logo";
+import { BUILD_VERSION, faVersion, getAppVersion } from "../../lib/version";
 
 const NAV = [
   { to: "/", label: "داشبورد", icon: LayoutDashboard, end: true },
@@ -31,6 +32,10 @@ export function Sidebar() {
   const installments = usePlans((s) => s.installments);
   const plans = usePlans((s) => s.plans);
   const loc = useLocation();
+  const [version, setVersion] = useState(BUILD_VERSION);
+  useEffect(() => {
+    void getAppVersion().then(setVersion);
+  }, []);
 
   const overdue = useMemo(() => {
     const today = todayISO();
@@ -138,6 +143,9 @@ export function Sidebar() {
             {collapsed ? <ChevronsRight size={17} className="rotate-180" /> : <ChevronsLeft size={17} className="rotate-180" />}
           </button>
         </Tip>
+      </div>
+      <div className="mt-2 text-center text-[11px] text-muted/70 num" title="نسخهٔ برنامه">
+        {collapsed ? faVersion(version) : `نسخهٔ ${faVersion(version)}`}
       </div>
     </motion.aside>
   );

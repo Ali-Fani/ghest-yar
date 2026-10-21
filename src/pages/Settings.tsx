@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Bell, Database, Download, Info, Monitor, Moon, Palette, Sparkles, Sun, Trash2, Upload } from "lucide-react";
 import { useSettings, type Theme } from "../store/useSettings";
@@ -9,6 +9,7 @@ import { ConfirmDialog } from "../components/ui/Dialog";
 import { NumInput } from "../components/ui/Input";
 import { PageHeader, Segmented, Switch } from "../components/ui/Misc";
 import { Logo } from "../components/layout/Logo";
+import { BUILD_VERSION, faVersion, getAppVersion } from "../lib/version";
 import { backupFileName, readTextFileViaDialog, saveTextFile, validateBackup } from "../lib/backup";
 import { checkReminders, buildReminder } from "../lib/notify";
 import { toFaDigits } from "../lib/digits";
@@ -41,6 +42,10 @@ function Row({ title, desc, children }: { title: string; desc?: string; children
 export function SettingsPage() {
   const s = useSettings();
   const { plans, exportData, importData, clearAll } = usePlans();
+  const [appVersion, setAppVersion] = useState(BUILD_VERSION);
+  useEffect(() => {
+    void getAppVersion().then(setAppVersion);
+  }, []);
   const [clear1, setClear1] = useState(false);
   const [clear2, setClear2] = useState(false);
   const [importing, setImporting] = useState<ReturnType<typeof validateBackup> | null>(null);
@@ -141,7 +146,7 @@ export function SettingsPage() {
           <Logo size={52} />
           <div>
             <div className="text-[16px] font-extrabold">قسط‌یار</div>
-            <div className="text-[13px] text-muted">نسخه {toFaDigits("1.0.0")} · مدیریت اقساط با تقویم شمسی و تومان</div>
+            <div className="text-[13px] text-muted">نسخهٔ {faVersion(appVersion)} · مدیریت اقساط با تقویم شمسی و تومان</div>
             <div className="text-xs text-muted">همه داده‌ها فقط روی همین رایانه ذخیره می‌شود.</div>
           </div>
         </div>

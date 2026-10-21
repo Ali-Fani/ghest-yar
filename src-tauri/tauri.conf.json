@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "قسط‌یار",
-  "version": "1.0.0",
+  "version": "../package.json",
   "identifier": "ir.ghestyar.app",
   "build": {
     "frontendDist": "../dist",
@@ -31,8 +31,11 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
-    "publisher": "Ghest-Yar",
+    "publisher": "قسط‌یار",
     "shortDescription": "مدیریت اقساط",
+    "longDescription": "قسط‌یار، برنامهٔ دسکتاپ فارسی برای مدیریت اقساط با تقویم شمسی و واحد تومان؛ همهٔ داده‌ها فقط روی همین رایانه ذخیره می‌شود.",
+    "copyright": "© ۱۴۰۵ قسط‌یار. همهٔ حقوق محفوظ است.",
+    "category": "Finance",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -43,7 +46,8 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "languages": ["Farsi", "English"],
+        "languages": ["Farsi"],
+        "customLanguageFiles": { "Farsi": "nsis/Farsi.nsh" },
         "displayLanguageSelector": false
       }
     }

@@ -43,6 +43,9 @@ CREATE TABLE IF NOT EXISTS settings (
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // IMPORTANT: migrations are versioned and APPEND-ONLY. Never edit an existing
+    // migration (it is already applied on users' machines); add a new one with the
+    // next `version` number instead, so installer upgrades keep user data.
     let migrations = vec![Migration {
         version: 1,
         description: "create_initial_tables",
